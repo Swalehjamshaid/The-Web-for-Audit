@@ -1,0 +1,31 @@
+[phases.setup]
+nixPkgs = [
+    "glib",
+    "gobject-introspection",
+    "pango",
+    "cairo",
+    "gdk-pixbuf",
+    "atk",
+    "harfbuzz",
+    "freetype",
+    "fontconfig",
+    "libjpeg",
+    "libpng",
+    "libwebp",
+    "libxml2",
+    "libxslt"
+]
+
+aptPkgs = [
+    "libgobject-2.0-0",
+    "libglib2.0-0",
+    "libglib2.0-dev",
+    "libcairo2",
+    "libcairo2-dev",
+    "libpango-1.0-0",
+    "libpango1.0-dev",
+    "libgdk-pixbuf-2.0-0",
+    "libgdk-pixbuf2.0-dev",
+    "libatk1.0-0",
+    "shared-mime-info"
+]
