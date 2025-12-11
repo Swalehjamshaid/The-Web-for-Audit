@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="text-primary">Audit Report Detail</h1>
+            <a href="{{ url_for('report_pdf', report_id=report.id) }}" class="btn btn-danger" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-pdf-fill me-1" viewBox="0 0 16 16"><path d="M5.523 12.424q.215-.137.477-.276a1.59 1.59 0 0 1 .494-.207c.18-.034.33-.046.477-.046h.5c.348 0 .53.023.656.075.107.042.183.102.248.195a.43.43 0 0 1 .15.39c0 .117-.033.22-.11.318-.08.1-.183.17-.302.253a9.92 9.92 0 0 1-.419.231q-.285.129-.53.252a.852.852 0 0 1-.267.113c-.22.046-.4-.016-.492-.127a.125.125 0 0 1 .035-.152z"/><path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/></svg>Download PDF Report
+            </a>
+        </div>
+    </div>
+</div>
+<div class="card p-4 mb-4">
+    <h3 class="card-title text-info mb-3">{{ report.website_url }}</h3>
+    <p class="text-muted">Audited on: {{ report.date_audited.strftime('%Y-%m-%d at %H:%M:%S') }}</p>
+    <div class="row text-center mt-3">
+        <div class="col-md-4"><div class="p-3 border rounded h-100 bg-dark"><h4 class="text-info">Performance Score</h4><p class="display-4 text-info">{{ report.performance_score }}%</p></div></div>
+        <div class="col-md-4"><div class="p-3 border rounded h-100 bg-dark"><h4 class="text-success">Security Score</h4><p class="display-4 text-success">{{ report.security_score }}%</p></div></div>
+        <div class="col-md-4"><div class="p-3 border rounded h-100 bg-dark"><h4 class="text-warning">Accessibility Score</h4><p class="display-4 text-warning">{{ report.accessibility_score }}%</p></div></div>
+    </div>
+</div>
+<div class="card p-4">
+    <h2 class="mb-3">Detailed 37 Metrics Audit</h2>
+    <p class="text-muted">Compliance aligned with Google Web Vitals, ISO 25010, and WCAG 2.1.</p>
+    <div class="accordion" id="metricsAccordion">
+        {% for category, metrics_data in metrics.items() %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ category }}">
+                <button class="accordion-button collapsed bg-dark text-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ category }}" aria-expanded="false" aria-controls="collapse{{ category }}">
+                    {{ category.replace('_', ' ') }} ({{ metrics_data|length }} checks)
+                </button>
+            </h2>
+            <div id="collapse{{ category }}" class="accordion-collapse collapse" aria-labelledby="heading{{ category }}" data-bs-parent="#metricsAccordion">
+                <div class="accordion-body bg-dark">
+                    <table class="table table-sm table-borderless text-light">
+                        <thead><tr><th style="width: 70%;">Metric Name</th><th style="width: 30%;">Result/Value</th></tr></thead>
+                        <tbody>
+                            {% for metric_name, result in metrics_data.items() %}
+                            <tr>
+                                <td>{{ metric_name }}</td>
+                                <td>
+                                    {% if 'Passed' in result or 'Good' in result %}<span class="badge bg-success">{{ result }}</span>
+                                    {% elif 's' in result or 'ms' in result %}<span class="badge bg-info">{{ result }}</span>
+                                    {% else %}<span class="badge bg-danger">{{ result }}</span>{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}
