@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row"><div class="col-12"><h1 class="mb-4">Dashboard</h1><p class="lead text-muted">Welcome, <strong>{{ current_user.email }}</strong>! Your audit hub.</p></div></div>
+<div class="row mb-5">
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4 h-100">
+            <h3 class="card-title text-primary">Run New Website Audit</h3>
+            <p class="text-secondary">Enter the full URL of the website to start a comprehensive audit using our 37 metrics standard.</p>
+            <form method="POST" action="{{ url_for('run_audit') }}" class="mt-3">
+                <div class="input-group mb-3">
+                    <input type="url" class="form-control" name="website_url" placeholder="e.g., https://railway-company.com" required pattern="https?://.*" title="Must start with http:// or https://">
+                    <button class="btn btn-primary" type="submit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill me-1" viewBox="0 0 16 16"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>Start Audit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4 h-100">
+            <h3 class="card-title text-warning">Automated Reporting</h3>
+            {% if current_user.scheduled_website %}
+                <p class="text-success fw-bold">SCHEDULE ACTIVE:</p>
+                <p class="mb-2">Auditing <strong>{{ current_user.scheduled_website }}</strong>, reports sent daily to <strong>{{ current_user.scheduled_email }}</strong>.</p>
+                <form method="POST" action="{{ url_for('unschedule_report') }}"><button type="submit" class="btn btn-outline-danger btn-sm">Cancel Automated Reports</button></form>
+            {% else %}
+                <p class="text-secondary">Set up daily PDF reports for continuous monitoring.</p>
+                <form method="POST" action="{{ url_for('schedule_report') }}">
+                    <div class="mb-2"><input type="url" class="form-control form-control-sm" name="scheduled_website" placeholder="Website URL to audit (required)" required></div>
+                    <div class="mb-2"><input type="email" class="form-control form-control-sm" name="scheduled_email" placeholder="Email for delivery (required)" required value="{{ current_user.email }}"></div>
+                    <button type="submit" class="btn btn-warning w-100">Schedule Daily Reports</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-3">Audit History</h2>
+        {% if reports %}
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead><tr><th scope="col">Date</th><th scope="col">Website</th><th scope="col">Performance</th><th scope="col">Security</th><th scope="col">Accessibility</th><th scope="col">Action</th></tr></thead>
+                <tbody>
+                    {% for report in reports %}
+                    <tr>
+                        <td>{{ report.date_audited.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ report.website_url }}</td>
+                        <td class="text-info">{{ report.performance_score }}%</td>
+                        <td class="text-success">{{ report.security_score }}%</td>
+                        <td class="text-warning">{{ report.accessibility_score }}%</td>
+                        <td><a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-sm btn-outline-info">View Report</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card p-4 text-center"><p class="text-muted mb-0">No audit reports found. Start your first audit above!</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
