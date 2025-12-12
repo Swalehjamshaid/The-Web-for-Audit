@@ -1,43 +1,9 @@
-# railway.toml — BULLETPROOF SINGLE-SERVICE VERSION (Add worker/scheduler later)
-# This fixes init failure by keeping it simple — expand once main is stable.
-
 [build]
 builder = "NIXPACKS"
 
 [phases.setup]
-nixPkgs = [
-  "glib",
-  "gobject-introspection",
-  "pango",
-  "cairo",
-  "gdk-pixbuf",
-  "harfbuzz",
-  "freetype",
-  "fontconfig",
-  "libjpeg",
-  "libpng",
-  "libwebp",
-  "libxml2",
-  "libxslt"
-]
-aptPkgs = [
-  "libgobject-2.0-0",
-  "libglib2.0-0",
-  "libglib2.0-dev",
-  "libcairo2",
-  "libcairo2-dev",
-  "libpango-1.0-0",
-  "libpango1.0-dev",
-  "libgdk-pixbuf-2.0-0",
-  "libgdk-pixbuf2.0-dev",
-  "libatk1.0-0",
-  "shared-mime-info",
-  "libpq-dev",
-  "gcc"
-]
+nixPkgs = ["glib","gobject-introspection","pango","cairo","gdk-pixbuf","harfbuzz","freetype","fontconfig","libjpeg","libpng","libwebp","libxml2","libxslt"]
+aptPkgs = ["libgobject-2.0-0","libglib2.0-0","libglib2.0-dev","libcairo2","libcairo2-dev","libpango-1.0-0","libpango1.0-dev","libgdk-pixbuf-2.0-0","libgdk-pixbuf2.0-dev","libatk1.0-0","shared-mime-info","libpq-dev","gcc"]
 
-# Main Web Service (your dashboard + audits + PDF)
-[[services]]
-service = "the-web-for-audit"  # Matches your service name in screenshot
-[services.web.start]
-command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --log-level info --access-logfile - --error-logfile -"
+[start]
+command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --access-logfile - --error-logfile -"
