@@ -1,12 +1,12 @@
-# -----------------------------------------------------
-# STEP 1: DEFINE THE BASE IMAGE (THIS WAS MISSING!)
-# Choose a stable, small Python image (e.g., Python 3.10)
-FROM python:3.10-slim-buster
 
-# -----------------------------------------------------
-# STEP 2: INSTALL SYSTEM DEPENDENCIES (Your previous snippet)
-# WeasyPrint + PostgreSQL + Gunicorn compilation needs these
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# 1. UPGRADED BASE IMAGE: Switched from 'buster' (Debian 10, retired) 
+# to 'bullseye' (Debian 11, supported) to fix the 'apt-get update' error.
+FROM python:3.10-slim-bullseye
+
+# 2. INSTALL SYSTEM DEPENDENCIES (Your original list)
+# These are necessary for packages like WeasyPrint, psycopg2 (libpq-dev), and compiling Gunicorn.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libharfbuzz0b \
     libpangocairo-1.0-0 \
@@ -17,25 +17,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxslt1.1 \
     libpq-dev \
     gcc \
+    # Clean up the apt cache to keep the image size small
     && rm -rf /var/lib/apt/lists/*
 
-# -----------------------------------------------------
-# STEP 3: CONFIGURE APPLICATION ENVIRONMENT
+# 3. SET UP WORK DIRECTORY
 WORKDIR /app
-ENV PYTHONUNBUFFERED 1
 
-# -----------------------------------------------------
-# STEP 4: INSTALL PYTHON DEPENDENCIES
-# Assumes you have a requirements.txt file in your repository root
+# 4. INSTALL PYTHON DEPENDENCIES
+# Use a specific, common practice to leverage Docker caching:
+# Copy only the requirements file first, run pip install, then copy the rest of the code.
+# Ensure you have a 'requirements.txt' file in the root of your repository.
 COPY requirements.txt /app/
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# -----------------------------------------------------
-# STEP 5: COPY THE REMAINING APPLICATION CODE
+# 5. COPY APPLICATION CODE
+# Copy the rest of your application code into the image
 COPY . /app
 
-# -----------------------------------------------------
-# STEP 6: ENTRYPOINT/COMMAND (How to run the server)
-# You will likely replace this with a Gunicorn command for production
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# 6. APPLICATION ENTRYPOINT (Customize this to your needs)
+# This assumes you are running a Gunicorn or similar server.
+# If you are using Gunicorn, replace "my_project.wsgi:application" with your project's WSGI path.
+# EXPOSE 8000 # Railway automatically handles port exposure, but this is good practice
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project_name.wsgi"]
