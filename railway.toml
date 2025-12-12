@@ -1,14 +1,28 @@
+# railway.toml — THIS IS THE ONLY FILE YOU NEED
+# Railway will use this 100%. nixpacks.toml is ignored if this exists.
+
 [build]
 builder = "nixpacks"
 
+# WeasyPrint + PostgreSQL system dependencies
 [phases.setup]
-nixLibs = ["glib","gobject-introspection","pango","cairo","gdk-pixbuf","harfbuzz","freetype","fontconfig","libjpeg","libpng","libwebp","libxml2","libxslt"]
-aptPkgs = ["libgobject-2.0-0","libglib2.0-0","libglib2.0-dev","libcairo2","libcairo2-dev","libpango-1.0-0","libpango1.0-dev","libgdk-pixbuf-2.0-0","libgdk-pixbuf2.0-dev","libatk1.0-0","shared-mime-info","libpq-dev","gcc"]
+nixLibs = [
+  "glib", "gobject-introspection", "pango", "cairo", "gdk-pixbuf",
+  "harfbuzz", "freetype", "fontconfig", "libjpeg", "libpng",
+  "libwebp", "libxml2", "libxslt"
+]
+aptPkgs = [
+  "libgobject-2.0-0", "libglib2.0-0", "libglib2.0-dev",
+  "libcairo2", "libcairo2-dev", "libpango-1.0-0", "libpango1.0-dev",
+  "libgdk-pixbuf-2.0-0", "libgdk-pixbuf2.0-dev", "libatk1.0-0",
+  "shared-mime-info", "libpq-dev", "gcc"
+]
 
+# ──────────────── Services ────────────────
 [[services]]
 name = "web"
 [start]
-command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 1000 --timeout 300"
+command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 1000 --timeout 300 --access-logfile -"
 
 [[services]]
 name = "worker"
