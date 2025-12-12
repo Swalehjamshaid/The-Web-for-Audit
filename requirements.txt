@@ -9,6 +9,5 @@ WeasyPrint==62.3
 cairocffi==1.7.1
 redis==5.0.8
 rq==1.16.2
-rq-scheduler
 python-dotenv==1.0.1
 gunicorn==23.0.0
