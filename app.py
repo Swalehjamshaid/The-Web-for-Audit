@@ -1,5 +1,8 @@
-# app.py — FINAL PROFESSIONAL VERSION (December 2025)
-import os, json, time, random
+# app.py — FINAL WORKING VERSION (NO SYNTAX ERROR)
+import os
+import json
+import time
+import random
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -13,6 +16,7 @@ from weasyprint import HTML, CSS
 load_dotenv()
 app = Flask(__name__)
 
+# === CONFIG ===
 DB_URL = os.getenv("DATABASE_URL")
 if DB_URL and DB_URL.startswith("postgres://"):
     DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
@@ -30,7 +34,8 @@ login_manager.login_view = 'login'
 mail = Mail(app)
 
 @login_manager.user_loader
-def load_user(user_id): return User.query.get(int(user_id))
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # === MODELS ===
 class User(db.Model, UserMixin):
@@ -116,7 +121,9 @@ class AuditService:
         positive = {'performance': 0, 'security': 0, 'accessibility': 0}
 
         for cat_name, data in AUDIT_CATEGORIES.items():
-            key = "performance" if "Performance" in cat_name else "security" if "Security" in cat_name else "accessibility" if "Accessibility" in cat_name else None
+            key = ("performance" if "Performance" in cat_name else
+                   "security" if "Security" in cat_name else
+                   "accessibility" if "Accessibility" in cat_name else None)
             if key:
                 total[key] += len(data["items"])
                 for item in data["items"]:
@@ -129,63 +136,87 @@ class AuditService:
 
         return {**scores, 'metrics': metrics, 'categories': AUDIT_CATEGORIES}
 
-# === ROUTES ===
-@app.route('/'); def home(): return redirect(url_for('login')) if not current_user.is_authenticated else redirect(url_for('dashboard'))
-@app.route('/login', methods=['GET','POST'])
-def login():
-    if current_user.is_authenticated: return redirect(url_for('dashboard'))
-    if request.method == 'POST':
-        user = User.query.filter_by(email=request.form['email']).first()
-        if user and bcrypt.check_password_hash(user.password, request.form['password']):
-            login_user(user); return redirect(url_for('dashboard'))
-        flash('Invalid credentials', 'danger')
-    return render_template('login.html')
+# === ROUTES (PROPER SYNTAX) ===
+@app.route("/")
+def home():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
 
-@app.route('/dashboard'); @login_required
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        user = User.query.filter_by(email=request.form["email"]).first()
+        if user and bcrypt.check_password_hash(user.password, request.form["password"]):
+            login_user(user)
+            return redirect(url_for("dashboard"))
+        flash("Invalid credentials", "danger")
+    return render_template("login.html")
+
+@app.route("/dashboard")
+@login_required
 def dashboard():
     reports = AuditReport.query.filter_by(user_id=current_user.id).order_by(AuditReport.date_audited.desc()).limit(10).all()
-    return render_template('dashboard.html', reports=reports)
+    return render_template("dashboard.html", reports=reports)
 
-@app.route('/run_audit', methods=['POST']); @login_required
+@app.route("/run_audit", methods=["POST"])
+@login_required
 def run_audit():
-    url = request.form.get('website_url', '').strip()
-    if not url.startswith(('http://', 'https://')):
-        flash('Invalid URL', 'danger'); return redirect(url_for('dashboard'))
-    result = AuditService.run_audit(url)
-    scores = AuditService.calculate_score(result['metrics'])
-    report = AuditReport(website_url=url, metrics_json=json.dumps(result), performance_score=scores['performance'],
-                         security_score=scores['security'], accessibility_score=scores['accessibility'], user_id=current_user.id)
-    db.session.add(report); db.session.commit()
-    return redirect(url_for('view_report', report_id=report.id))
+    url = request.form.get("website_url", "").strip()
+    if not url.startswith(("http://", "https://")):
+        flash("Please enter a valid URL", "danger")
+        return redirect(url_for("dashboard"))
 
-@app.route('/report/<int:report_id>'); @login_required
+    result = AuditService.run_audit(url)
+    scores = AuditService.calculate_score(result["metrics"])
+
+    report = AuditReport(
+        website_url=url,
+        metrics_json=json.dumps(result),
+        performance_score=scores["performance"],
+        security_score=scores["security"],
+        accessibility_score=scores["accessibility"],
+        user_id=current_user.id
+    )
+    db.session.add(report)
+    db.session.commit()
+    return redirect(url_for("view_report", report_id=report.id))
+
+@app.route("/report/<int:report_id>")
+@login_required
 def view_report(report_id):
     report = AuditReport.query.get_or_404(report_id)
-    if report.user_id != current_user.id: return redirect(url_for('dashboard'))
+    if report.user_id != current_user.id:
+        return redirect(url_for("dashboard"))
     data = json.loads(report.metrics_json)
-    return render_template('report_detail.html', report=report, data=data)
+    return render_template("report_detail.html", report=report, data=data)
 
-@app.route('/report/pdf/<int:report_id>'); @login_required
+@app.route("/report/pdf/<int:report_id>")
+@login_required
 def report_pdf(report_id):
     report = AuditReport.query.get_or_404(report_id)
-    if report.user_id != current_user.id: return redirect(url_for('dashboard'))
+    if report.user_id != current_user.id:
+        return redirect(url_for("dashboard"))
     data = json.loads(report.metrics_json)
-    html = render_template('report_pdf.html', report=report, data=data)
+    html = render_template("report_pdf.html", report=report, data=data)
     pdf = HTML(string=html).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 2cm; } body { font-family: "DejaVu Sans", sans-serif; }')])
     response = make_response(pdf)
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename=FFTech_Audit_{report.id}.pdf'
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = f'attachment; filename=FFTech_Audit_{report.id}.pdf'
     return response
 
-# === APP FACTORY (FIXES 500 ERROR) ===
+# === APP FACTORY (NO 500 ERROR) ===
 def create_app():
     with app.app_context():
         db.create_all()
         admin_email = os.getenv("ADMIN_EMAIL", "roy.jamshaid@gmail.com")
         if not User.query.filter_by(email=admin_email).first():
-            hashed = bcrypt.generate_password_hash(os.getenv("ADMIN_PASSWORD", "Jamshaid,1981")).decode('utf-8')
+            hashed = bcrypt.generate_password_hash(os.getenv("ADMIN_PASSWORD", "Jamshaid,1981")).decode("utf-8")
             admin = User(email=admin_email, password=hashed, is_admin=True)
-            db.session.add(admin); db.session.commit()
+            db.session.add(admin)
+            db.session.commit()
     return app
 
 application = create_app()
