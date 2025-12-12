@@ -77,23 +77,47 @@ class AuditReport(db.Model):
     accessibility_score = db.Column(db.Integer, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# --- AUDIT ENGINE (Simulated) with Max Metrics (45 Total) ---
+# --- AUDIT ENGINE (Simulated) with 10 COMPREHENSIVE CATEGORIES (Total 50 Metrics) ---
 class AuditService:
     METRICS = {
-        "Performance (12 checks)": ["1. Page Load Speed (LCP)", "2. First Contentful Paint (FCP)", "3. Total Blocking Time (TBT)", "4. Cumulative Layout Shift (CLS)", "5. Time to Interactive (TTI)", "6. Server Response Time (TTFB)", "7. Image Optimization Status", "8. Render Blocking Resources", "9. Gzip/Brotli Compression", "10. Caching Policy", "11. Network Payload Size", "12. JavaScript Execution Time"],
-        
-        "Security (15 checks)": [
-            "13. HTTPS Enforcement", "14. Content Security Policy", "15. XSS Protection", "16. Secure Headers", "17. HSTS Header", "18. CORS Policy", "19. OWASP Compliance", "20. Dependency Security", "21. Rate Limiting", "22. SQL Injection Protection",
-            "23. Input Sanitization", "24. Server Patch Level", "25. Session Management", "26. Two-Factor Auth (2FA)", "27. Subdomain Takeover" 
+        "1. Technical SEO Audit (7 checks)": [
+            "Crawlability (robots.txt, sitemap)", "Indexability (noindex, canonicals)", "Broken Links Status", 
+            "Redirect Chains/Loops", "URL Structure Optimization", "Orphan Pages Check", "Crawl Errors (4xx/5xx)"
         ],
-        
-        "Accessibility (10 checks)": [
-            "28. WCAG 2.1 Compliance", "29. Mobile Responsiveness", "30. Alt Text on Images", "31. Contrast Ratio", "32. Keyboard Navigation", "33. Semantic HTML", "34. ARIA Labels",
-            "35. Focus Indicators", "36. Language Declaration", "37. Error Identification" 
+        "2. Performance & Core Web Vitals (8 checks)": [
+            "Largest Contentful Paint (LCP)", "Interaction to Next Paint (INP)", "Cumulative Layout Shift (CLS)", 
+            "Server Response Time (TTFB)", "Image Optimization Status", "CSS/JS Minification Status", 
+            "Browser Caching Policy", "Mobile Page Speed"
         ],
-        
-        "Usability & SEO (8 checks)": [
-            "38. Meta Tags (Title/Desc)", "39. Viewport Config", "40. Broken Links", "41. Sitemap & robots.txt", "42. URL Structure (Canonical)", "43. Readability Score", "44. UX Flow (Journey)", "45. ISO 25010 Compliance"
+        "3. On-Page SEO Audit (6 checks)": [
+            "Unique Title Tags", "Unique Meta Descriptions", "H1/H2 Structure", 
+            "Content Keyword Relevance", "Image ALT Text Coverage", "Structured Data Markup"
+        ],
+        "4. User Experience (UX) Audit (5 checks)": [
+            "Navigation Usability (Menus)", "Readability Score", "Mobile Responsiveness (Viewport)", 
+            "Call-to-Action (CTA) Clarity", "Visual Consistency"
+        ],
+        "5. Website Security Audit (6 checks)": [
+            "HTTPS & SSL Certificate Validity", "HSTS Header Implementation", "Content Security Policy (CSP)",
+            "Server Patch Level", "Dependency Security (OWASP)", "Malware/Vulnerability Check"
+        ],
+        "6. Accessibility Audit (WCAG Standards) (5 checks)": [
+            "Color Contrast Ratio", "Keyboard Navigation Compliance", "Screen Reader Compatibility", 
+            "ARIA Labels Presence", "Semantic HTML Structure"
+        ],
+        "7. Content Audit (4 checks)": [
+            "Content Uniqueness and Depth", "Relevance to User Intent", "Outdated Content Identification", 
+            "Content Gaps Identified"
+        ],
+        "8. Off-Page SEO & Backlinks (4 checks)": [
+            "Backlink Profile Quality Score", "Toxic Link Detection", "Local SEO Signals (NAP)", 
+            "Brand Mentions/Review Activity"
+        ],
+        "9. Analytics & Tracking Audit (3 checks)": [
+            "GA4/Analytics Setup Verification", "Goals and Events Tracking", "Tag Manager Configuration"
+        ],
+        "10. E-Commerce Audit (Optional) (2 checks)": [
+            "Product Page Optimization", "Checkout Flow Usability"
         ]
     }
 
@@ -105,7 +129,7 @@ class AuditService:
         
         for item in all_metrics:
             # Simulation for performance/size metrics
-            if any(k in item.lower() for k in ["speed", "time", "load", "fcp", "lcp", "tti", "ttfb", "execution time"]):
+            if any(k in item.lower() for k in ["lcp", "inp", "cls", "ttfb", "speed", "load", "execution"]):
                 detailed[item] = f"{random.uniform(0.8, 4.5):.2f}s"
             elif "payload size" in item.lower():
                 detailed[item] = f"{random.uniform(0.5, 3.0):.2f}MB"
@@ -117,29 +141,51 @@ class AuditService:
 
     @staticmethod
     def calculate_score(metrics):
-        scores = {'performance': 0, 'security': 0, 'accessibility': 0, 'usability': 0}
-        
+        # Define the 5 final scores to display
+        scores = {'performance': 0, 'security': 0, 'accessibility': 0, 'tech_seo': 0, 'ux': 0}
+        category_score_map = {
+            "1. Technical SEO Audit (7 checks)": "tech_seo",
+            "2. Performance & Core Web Vitals (8 checks)": "performance",
+            "3. On-Page SEO Audit (6 checks)": "tech_seo", 
+            "4. User Experience (UX) Audit (5 checks)": "ux",
+            "5. Website Security Audit (6 checks)": "security",
+            "6. Accessibility Audit (WCAG Standards) (5 checks)": "accessibility",
+            "7. Content Audit (4 checks)": "ux", 
+            "8. Off-Page SEO & Backlinks (4 checks)": "tech_seo", 
+            "9. Analytics & Tracking Audit (3 checks)": "tech_seo", 
+            "10. E-Commerce Audit (Optional) (2 checks)": "ux" 
+        }
+
+        total_counts = {'performance': 0, 'security': 0, 'accessibility': 0, 'tech_seo': 0, 'ux': 0}
+        positive_counts = {'performance': 0, 'security': 0, 'accessibility': 0, 'tech_seo': 0, 'ux': 0}
+
         for category, items in AuditService.METRICS.items():
-            # Map category name to score key
-            key_map = {'performance': 'performance', 'security': 'security', 'accessibility': 'accessibility', 'usability': 'usability'}
-            category_key = category.split(' ')[0].lower()
-            score_key = key_map.get(category_key)
-            
+            score_key = category_score_map.get(category)
             if score_key:
-                total_count = len(items)
-                positive_count = 0
-                
+                total_counts[score_key] += len(items)
+                
                 for metric_name in items:
                     result = metrics.get(metric_name)
                     if result in ["Excellent", "Good"]:
-                        positive_count += 1
-                
-                if total_count > 0:
-                    scores[score_key] = round((positive_count / total_count) * 100)
-        
-        return scores
+                        positive_counts[score_key] += 1
+        
+        # Finalize scores calculation
+        for key in scores.keys():
+            if total_counts[key] > 0:
+                scores[key] = round((positive_counts[key] / total_counts[key]) * 100)
+        
+        # Map the calculated scores back to the structure expected by the DB (performance, security, accessibility)
+        final_scores = {
+            'performance': scores['performance'],
+            'security': scores['security'],
+            'accessibility': scores['accessibility'],
+            'metrics': metrics,
+            'all_scores': scores # Pass all 5 detailed scores to the template
+        }
+        return final_scores
 
-# --- Task Integration (CRITICAL FIX: Changed 'tasks' to 'worker') ---
+
+# --- Task Integration (CRITICAL: Changed 'tasks' to 'worker') ---
 try:
     from worker import send_report_email, run_scheduled_report
 except ImportError:
@@ -147,7 +193,7 @@ except ImportError:
     run_scheduled_report = None
 
 
-# --- Admin User Creation ---
+# --- Admin User Creation (Unchanged) ---
 def create_admin_user():
     with app.app_context():
         db.create_all()
@@ -202,18 +248,16 @@ def run_audit():
     
     # 1. Run Audit
     result = AuditService.run_audit(url)
-    detailed_metrics = result['metrics']
+    # Get scores and detailed metrics in one go
+    scores_data = AuditService.calculate_score(result['metrics']) 
     
-    # 2. Calculate Score
-    scores = AuditService.calculate_score(detailed_metrics)
-    
-    # 3. Save Report
+    # 3. Save Report (Use the main three scores for DB storage)
     report = AuditReport(
         website_url=url,
-        performance_score=scores['performance'],
-        security_score=scores['security'],
-        accessibility_score=scores['accessibility'],
-        metrics_json=json.dumps(detailed_metrics),
+        performance_score=scores_data['performance'],
+        security_score=scores_data['security'],
+        accessibility_score=scores_data['accessibility'],
+        metrics_json=json.dumps(scores_data['metrics']),
         user_id=current_user.id
     )
     db.session.add(report)
@@ -239,11 +283,12 @@ def view_report(report_id):
     
     # Prepare data for report_detail.html
     metrics_data = json.loads(report.metrics_json)
-    scores = AuditService.calculate_score(metrics_data)
+    scores_data = AuditService.calculate_score(metrics_data)
+    scores_full = scores_data['all_scores']
     metrics_by_cat = {cat: {k: metrics_data.get(k, 'N/A') for k in items} 
                       for cat, items in AuditService.METRICS.items()}
     
-    return render_template('report_detail.html', report=report, metrics=metrics_by_cat, scores=scores)
+    return render_template('report_detail.html', report=report, metrics=metrics_by_cat, scores=scores_full)
 
 @app.route('/report/pdf/<int:report_id>')
 @login_required
@@ -255,15 +300,16 @@ def report_pdf(report_id):
     
     # Prepare data for report_pdf.html
     metrics_data = json.loads(report.metrics_json)
-    scores = AuditService.calculate_score(metrics_data)
+    scores_data = AuditService.calculate_score(metrics_data)
+    scores_full = scores_data['all_scores']
     metrics_by_cat = {cat: {k: metrics_data.get(k, 'N/A') for k in items} 
                       for cat, items in AuditService.METRICS.items()}
     
     def generate_pdf_content(report, metrics, scores):
-        # Pass scores to report_pdf.html
+        # Pass full scores to report_pdf.html
         return render_template('report_pdf.html', report=report, metrics=metrics, scores=scores)
     
-    html = generate_pdf_content(report, metrics_by_cat, scores)
+    html = generate_pdf_content(report, metrics_by_cat, scores_full)
     
     try:
         pdf = HTML(string=html).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 2cm } body { font-family: sans-serif; }')])
