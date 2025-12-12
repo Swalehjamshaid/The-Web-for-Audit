@@ -23,7 +23,8 @@ def get_pdf_content(report_id):
         
         # Prepare data for report_pdf.html
         metrics_data = json.loads(report.metrics_json)
-        scores = AuditService.calculate_score(metrics_data)
+        scores_data = AuditService.calculate_score(metrics_data)
+        scores_full = scores_data['all_scores']
         metrics_by_cat = {cat: {k: metrics_data.get(k, 'N/A') for k in items} 
                           for cat, items in AuditService.METRICS.items()}
         
@@ -31,7 +32,7 @@ def get_pdf_content(report_id):
         html_content = render_template('report_pdf.html', 
                                        report=report, 
                                        metrics=metrics_by_cat, 
-                                       scores=scores)
+                                       scores=scores_full)
         
         try:
             # Generate the PDF binary data
@@ -72,7 +73,7 @@ def send_report_email(report_id, recipient_email):
             print(f"Failed to send email for report {report_id}: {e}")
 
 def run_scheduled_report(user_id):
-    """Runs a full audit, saves it, and then emails it (used for immediate test or scheduler)."""
+    """Runs a full audit, saves it, and then emails it (used for immediate test)."""
     with app.app_context():
         user = User.query.get(user_id)
         if not user or not user.scheduled_website or not user.scheduled_email:
@@ -85,15 +86,15 @@ def run_scheduled_report(user_id):
         detailed_metrics = result['metrics']
         
         # 2. Calculate Score
-        scores = AuditService.calculate_score(detailed_metrics)
+        scores_data = AuditService.calculate_score(detailed_metrics)
         
         # 3. Save Report
         report = AuditReport(
             website_url=url,
-            performance_score=scores['performance'],
-            security_score=scores['security'],
-            accessibility_score=scores['accessibility'],
-            metrics_json=json.dumps(detailed_metrics),
+            performance_score=scores_data['performance'],
+            security_score=scores_data['security'],
+            accessibility_score=scores_data['accessibility'],
+            metrics_json=json.dumps(scores_data['metrics']),
             user_id=user.id
         )
         db.session.add(report)
