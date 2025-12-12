@@ -1,9 +1,10 @@
-# app.py - CORRECTIVE VERSION WITH ALL SAFETY CHECKS RE-ADDED
+
+# app.py - FINAL ROBUST VERSION (With All Safety Checks)
 import os
 import json
-import time # RE-ADDED
+import time
 import random
-import sys # RE-ADDED
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -11,11 +12,11 @@ from flask import Flask, render_template, request, redirect, url_for, flash, mak
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
-from flask_mail import Mail # RE-ADDED for completeness
+from flask_mail import Mail
 from weasyprint import HTML, CSS
-from redis import Redis # RE-ADDED for completeness
-from rq import Queue # RE-ADDED for completeness
-from sqlalchemy.exc import OperationalError # RE-ADDED
+from redis import Redis
+from rq import Queue
+from sqlalchemy.exc import OperationalError # Crucial for catching DB connection errors
 
 load_dotenv()
 
@@ -38,6 +39,7 @@ def initialize_db_with_retries(app, db, retries=5, delay=5):
                     print("Failed to initialize database after multiple retries. This is a fatal error.")
                     return False
             except Exception as e:
+                # Catch generic errors outside of OperationalError
                 print(f"Fatal error during DB initialization: {e}")
                 return False
         return False
@@ -56,13 +58,15 @@ def create_app():
         'SQLALCHEMY_TRACK_MODIFICATIONS': False,
     })
     
-    # Email Configuration - Re-added safety for MAIL_PORT
+    # Email Configuration
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    # Safe PORT handling
     try:
         port_val = os.getenv('MAIL_PORT')
         app.config['MAIL_PORT'] = int(port_val) if port_val else 587
     except ValueError:
         app.config['MAIL_PORT'] = 587
+    
     app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
@@ -73,23 +77,27 @@ def create_app():
     bcrypt = Bcrypt(app)
     login_manager = LoginManager(app)
     login_manager.login_view = 'login'
-    mail = Mail(app) # Re-added
+    mail = Mail(app)
 
-    # Redis/RQ Setup - Re-added safety for Redis
+    # Redis/RQ Setup (NOTE: Worker is disabled in railway.toml)
     try:
         redis_conn = Redis.from_url(os.getenv('REDIS_URL') or 'redis://localhost:6379')
         redis_conn.ping()
         task_queue = Queue(connection=redis_conn)
+        print("Redis Queue initialized successfully.")
     except Exception as e:
+        print(f"Warning: Could not connect to Redis/initialize Queue: {e}")
         task_queue = None
-        print(f"Warning: Redis connection failed: {e}")
+    
+    send_report_email = None
+    run_scheduled_report = None
 
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # === MODELS === (Unchanged)
+    # === MODELS ===
     class User(db.Model, UserMixin):
         id = db.Column(db.Integer, primary_key=True)
         email = db.Column(db.String(120), unique=True, nullable=False)
@@ -107,7 +115,7 @@ def create_app():
         accessibility_score = db.Column(db.Integer, default=0)
         user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # === AUDIT CATEGORIES === (Unchanged)
+    # === AUDIT CATEGORIES === (Full 10-point logic for scoring)
     AUDIT_CATEGORIES = {
         "Technical SEO Audit": {"desc": "A technical assessment...", "items": ["Crawlability (robots.txt, sitemap, crawl errors)", "Indexability (noindex tags, canonicals, duplicate pages)", "Internal linking (broken links, orphan pages, link depth)", "Redirects (301/302, redirect loops, chains)", "URL structure and site architecture"]},
         "Performance & Core Web Vitals": {"desc": "Evaluates how fast...", "items": ["Core Web Vitals (LCP, INP/FID, CLS)", "Page speed & load time", "Server performance (TTFB)", "Image optimization (compression, WebP)", "CSS/JS optimization", "CDN, caching, lazy loading", "Mobile performance"]},
@@ -136,14 +144,14 @@ def create_app():
 
         @staticmethod
         def calculate_score(metrics):
-            scores = {"performance": 0, "security": 0, "accessibility": 0}
-            total = {"performance": 0, "security": 0, "accessibility": 0}
-            positive = {"performance": 0, "security": 0, "accessibility": 0}
+            scores = {"performance": 0, "security": 0, "accessibility": 0, "tech_seo": 0, "ux": 0} 
+            total = {"performance": 0, "security": 0, "accessibility": 0, "tech_seo": 0, "ux": 0}
+            positive = {"performance": 0, "security": 0, "accessibility": 0, "tech_seo": 0, "ux": 0}
+            
+            score_map = {"Performance & Core Web Vitals": "performance", "Website Security Audit": "security", "Accessibility Audit (WCAG Standards)": "accessibility", "Technical SEO Audit": "tech_seo", "On-Page SEO Audit": "tech_seo", "Off-Page SEO & Backlinks": "tech_seo", "Analytics & Tracking Audit": "tech_seo", "User Experience (UX) Audit": "ux", "Content Audit": "ux", "E-Commerce Audit (If applicable)": "ux"}
 
             for cat_name, info in AUDIT_CATEGORIES.items():
-                key = ("performance" if "Performance" in cat_name else
-                       "security" if "Security" in cat_name else
-                       "accessibility" if "Accessibility" in cat_name else None)
+                key = score_map.get(cat_name)
                 if key:
                     total[key] += len(info["items"])
                     for item in info["items"]:
@@ -157,7 +165,7 @@ def create_app():
             return {**scores, "metrics": metrics, "categories": AUDIT_CATEGORIES}
 
 
-    # === ROUTES === (Unchanged)
+    # === ROUTES ===
     @app.route("/")
     def index():
         return redirect(url_for("login"))
@@ -202,8 +210,8 @@ def create_app():
         db.session.add(report)
         db.session.commit()
         
-        if task_queue: # Check if Redis is connected
-            flash("Report saved, but email automation is currently disabled.", "warning")
+        if task_queue: 
+            flash("Report saved, but email automation is disabled in this stable configuration.", "warning")
         
         return redirect(url_for("view_report", report_id=report.id))
 
@@ -242,19 +250,29 @@ def create_app():
     def logout():
         logout_user()
         return redirect(url_for("login"))
+    
+    @app.route("/schedule", methods=['POST'])
+    @login_required
+    def schedule_report():
+        flash('Scheduling is disabled in this configuration.', 'warning')
+        return redirect(url_for('dashboard'))
 
+    @app.route("/admin")
+    @login_required
+    def admin_dashboard():
+        if current_user.is_admin:
+            flash('Admin dashboard functionality needs to be built.', 'info')
+        return redirect(url_for('dashboard'))
 
     # === DATABASE & ADMIN SETUP ===
-    # CRITICAL: Run initialization with retries before committing admin user
     if initialize_db_with_retries(app, db):
         with app.app_context():
             if not User.query.filter_by(email="roy.jamshaid@gmail.com").first():
                 hashed = bcrypt.generate_password_hash("Jamshaid,1981").decode('utf-8')
-                admin = User(email="roy.jamshaid@gmail.com", password=hashed, is_admin=True) # Added is_admin
+                admin = User(email="roy.jamshaid@gmail.com", password=hashed, is_admin=True)
                 db.session.add(admin)
                 db.session.commit()
     else:
-        # If DB initialization fails after retries, log a fatal error and exit
         print("FATAL ERROR: Application failed to connect/initialize database. Shutting down.")
         sys.exit(1)
 
