@@ -1,7 +1,11 @@
 # railway.toml - FINAL WORKING VERSION
 [build]
-# ... (rest of build setup unchanged)
+builder = "NIXPACKS"
+
+[phases.setup]
+nixPkgs = ["glib","gobject-introspection","pango","cairo","gdk-pixbuf","harfbuzz","freetype","fontconfig","libjpeg","libpng","libwebp","libxml2","libxslt","libffi", "libpq"]
+aptPkgs = ["libgobject-2.0-0","libglib2.0-0","libcairo2","libpango-1.0-0","libgdk-pixbuf-2.0-0","libatk1.0-0","shared-mime-info","libpq-dev","gcc"]
 
 [start]
-# CRITICAL FIX: The command now correctly targets 'app:application'
+# CRITICAL FIX: Targets the 'application' instance, resolving the "Failed to find attribute 'app'" error.
 command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --log-level debug"
