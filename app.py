@@ -120,7 +120,7 @@ class AuditService:
         scores = {'performance': 0, 'security': 0, 'accessibility': 0, 'usability': 0}
         
         for category, items in AuditService.METRICS.items():
-            # Map category name to score key (e.g., "Security (15 checks)" -> 'security')
+            # Map category name to score key
             key_map = {'performance': 'performance', 'security': 'security', 'accessibility': 'accessibility', 'usability': 'usability'}
             category_key = category.split(' ')[0].lower()
             score_key = key_map.get(category_key)
@@ -131,11 +131,9 @@ class AuditService:
                 
                 for metric_name in items:
                     result = metrics.get(metric_name)
-                    # Count "Excellent" or "Good" results as positive
                     if result in ["Excellent", "Good"]:
                         positive_count += 1
                 
-                # Calculate score and round
                 if total_count > 0:
                     scores[score_key] = round((positive_count / total_count) * 100)
         
@@ -196,7 +194,7 @@ def dashboard():
 @login_required
 def run_audit():
     url = request.form.get('website_url', '').strip()
-    email_recipient = request.form.get('email_recipient') 
+    email_recipient = request.form.get('email_recipient') 
     
     if not url.startswith(('http://', 'https://')):
         flash('Valid URL required', 'danger')
@@ -295,9 +293,9 @@ def schedule_report():
     # Queue an immediate run (test) via the worker, which handles the audit, save, and email.
     if task_queue and run_scheduled_report:
         task_queue.enqueue(run_scheduled_report, current_user.id, job_timeout='30m')
-        flash('Schedule saved. Test report email queued for immediate send!', 'success')
+        flash('Schedule saved! An immediate test report has been queued for processing.', 'success')
     elif not task_queue:
-        flash('Schedule saved, but Redis is not connected. Worker/Scheduler will not run.', 'warning')
+        flash('Schedule saved, but Redis is not connected. Automated reports will not run.', 'warning')
     
     return redirect(url_for('dashboard'))
 
