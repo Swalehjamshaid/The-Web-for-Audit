@@ -3,17 +3,23 @@
 <head>
     <title>Audit Report - {{ report.website_url }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .excellent { background: #28a745; color: white; }
+        .good { background: #17a2b8; color: white; }
+        .fair { background: #ffc107; color: black; }
+        .poor { background: #dc3545; color: white; }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container py-5">
-    <h1>Audit Report: {{ report.website_url }}</h1>
+    <h1 class="mb-4">Audit Report: {{ report.website_url }}</h1>
     <p><strong>Date:</strong> {{ report.date_audited.strftime("%B %d, %Y at %I:%M %p") }}</p>
 
-    <div class="row mb-4">
+    <div class="row mb-5">
         <div class="col-md-4">
             <div class="card text-center bg-success text-white">
                 <div class="card-body">
-                    <h3>{{ data.performance }}%</h3>
+                    <h2>{{ data.performance }}%</h2>
                     <p>Performance</p>
                 </div>
             </div>
@@ -21,45 +27,48 @@
         <div class="col-md-4">
             <div class="card text-center bg-info text-white">
                 <div class="card-body">
-                    <h3>{{ data.security }}%</h3>
+                    <h2>{{ data.security }}%</h2>
                     <p>Security</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-center bg-warning text-white">
+            <div class="card text-center bg-warning text-dark">
                 <div class="card-body">
-                    <h3>{{ data.accessibility }}%</h3>
+                    <h2>{{ data.accessibility }}%</h2>
                     <p>Accessibility</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <a href="{{ url_for('report_pdf', report_id=report.id) }}" class="btn btn-danger btn-lg mb-4">Download PDF Report</a>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mb-4">Back to Dashboard</a>
+    <a href="{{ url_for('report_pdf', report_id=report.id) }}" class="btn btn-danger btn-lg">Download PDF Report</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary ms-3">Back to Dashboard</a>
+
+    <hr class="my-5">
 
     <h2>Detailed Results</h2>
     {% for category, info in data.categories.items() %}
-    <div class="card mb-3">
+    <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-            <h5>{{ category }}</h5>
+            <h4>{{ category }}</h4>
         </div>
         <div class="card-body">
             <p><em>{{ info.desc }}</em></p>
-            <ul>
+            <div class="row">
                 {% for item in info.items %}
-                <li><strong>{{ item }}:</strong> 
+                <div class="col-md-6 mb-2">
+                    <strong>{{ item }}:</strong>
                     <span class="badge 
-                        {% if data.metrics[item] == 'Excellent' %}bg-success
-                        {% elif data.metrics[item] == 'Good' %}bg-info
-                        {% elif data.metrics[item] == 'Fair' %}bg-warning
-                        {% else %}bg-danger{% endif %}">
+                        {% if data.metrics[item] == 'Excellent' %}excellent
+                        {% elif data.metrics[item] == 'Good' %}good
+                        {% elif data.metrics[item] == 'Fair' %}fair
+                        {% else %}poor{% endif %}">
                         {{ data.metrics[item] }}
                     </span>
-                </li>
+                </div>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
     </div>
     {% endfor %}
