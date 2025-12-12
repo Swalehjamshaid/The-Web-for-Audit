@@ -1,4 +1,3 @@
-# railway.toml — FINAL WORKING VERSION
 [build]
 builder = "NIXPACKS"
 
