@@ -5,7 +5,7 @@ import random
 from datetime import datetime
 from functools import wraps
 from dotenv import load_dotenv
-import sys 
+import sys 
 
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
@@ -65,7 +65,7 @@ class User(db.Model, UserMixin):
     is_admin = db.Column(db.Boolean, default=False)
     scheduled_website = db.Column(db.String(255))
     scheduled_email = db.Column(db.String(120))
-    reports = db.relationship('AuditReport', backref='auditor', lazy=True) 
+    reports = db.relationship('AuditReport', backref='auditor', lazy=True) 
 
 class AuditReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -81,17 +81,17 @@ class AuditReport(db.Model):
 class AuditService:
     METRICS = {
         "Performance (12 checks)": ["1. Page Load Speed (LCP)", "2. First Contentful Paint (FCP)", "3. Total Blocking Time (TBT)", "4. Cumulative Layout Shift (CLS)", "5. Time to Interactive (TTI)", "6. Server Response Time (TTFB)", "7. Image Optimization Status", "8. Render Blocking Resources", "9. Gzip/Brotli Compression", "10. Caching Policy", "11. Network Payload Size", "12. JavaScript Execution Time"],
-        
+        
         "Security (15 checks)": [
             "13. HTTPS Enforcement", "14. Content Security Policy", "15. XSS Protection", "16. Secure Headers", "17. HSTS Header", "18. CORS Policy", "19. OWASP Compliance", "20. Dependency Security", "21. Rate Limiting", "22. SQL Injection Protection",
-            "23. Input Sanitization", "24. Server Patch Level", "25. Session Management", "26. Two-Factor Auth (2FA)", "27. Subdomain Takeover" 
+            "23. Input Sanitization", "24. Server Patch Level", "25. Session Management", "26. Two-Factor Auth (2FA)", "27. Subdomain Takeover" 
         ],
-        
+        
         "Accessibility (10 checks)": [
             "28. WCAG 2.1 Compliance", "29. Mobile Responsiveness", "30. Alt Text on Images", "31. Contrast Ratio", "32. Keyboard Navigation", "33. Semantic HTML", "34. ARIA Labels",
-            "35. Focus Indicators", "36. Language Declaration", "37. Error Identification" 
+            "35. Focus Indicators", "36. Language Declaration", "37. Error Identification" 
         ],
-        
+        
         "Usability & SEO (8 checks)": [
             "38. Meta Tags (Title/Desc)", "39. Viewport Config", "40. Broken Links", "41. Sitemap & robots.txt", "42. URL Structure (Canonical)", "43. Readability Score", "44. UX Flow (Journey)", "45. ISO 25010 Compliance"
         ]
@@ -102,7 +102,7 @@ class AuditService:
         time.sleep(2) # Simulate audit time
         detailed = {}
         all_metrics = [metric for sublist in AuditService.METRICS.values() for metric in sublist]
-        
+        
         for item in all_metrics:
             # Simulation for performance/size metrics
             if any(k in item.lower() for k in ["speed", "time", "load", "fcp", "lcp", "tti", "ttfb", "execution time"]):
@@ -112,38 +112,38 @@ class AuditService:
             else:
                 # Biased random choice for status results
                 detailed[item] = random.choices(["Excellent", "Good", "Fair", "Poor"], weights=[40, 30, 20, 10], k=1)[0]
-        
+        
         return { 'metrics': detailed }
 
     @staticmethod
     def calculate_score(metrics):
         scores = {'performance': 0, 'security': 0, 'accessibility': 0, 'usability': 0}
-        
+        
         for category, items in AuditService.METRICS.items():
             # Map category name to score key (e.g., "Security (15 checks)" -> 'security')
             key_map = {'performance': 'performance', 'security': 'security', 'accessibility': 'accessibility', 'usability': 'usability'}
             category_key = category.split(' ')[0].lower()
             score_key = key_map.get(category_key)
-            
+            
             if score_key:
                 total_count = len(items)
                 positive_count = 0
-                
+                
                 for metric_name in items:
                     result = metrics.get(metric_name)
                     # Count "Excellent" or "Good" results as positive
                     if result in ["Excellent", "Good"]:
                         positive_count += 1
-                
+                
                 # Calculate score and round
                 if total_count > 0:
                     scores[score_key] = round((positive_count / total_count) * 100)
-        
+        
         return scores
 
-# --- Task Integration ---
+# --- Task Integration (CRITICAL FIX: Changed 'tasks' to 'worker') ---
 try:
-    from tasks import send_report_email, run_scheduled_report
+    from worker import send_report_email, run_scheduled_report
 except ImportError:
     send_report_email = None
     run_scheduled_report = None
@@ -196,19 +196,19 @@ def dashboard():
 @login_required
 def run_audit():
     url = request.form.get('website_url', '').strip()
-    email_recipient = request.form.get('email_recipient') # Get email for immediate send
-    
+    email_recipient = request.form.get('email_recipient') 
+    
     if not url.startswith(('http://', 'https://')):
         flash('Valid URL required', 'danger')
         return redirect(url_for('dashboard'))
-    
+    
     # 1. Run Audit
     result = AuditService.run_audit(url)
     detailed_metrics = result['metrics']
-    
+    
     # 2. Calculate Score
     scores = AuditService.calculate_score(detailed_metrics)
-    
+    
     # 3. Save Report
     report = AuditReport(
         website_url=url,
@@ -220,14 +220,14 @@ def run_audit():
     )
     db.session.add(report)
     db.session.commit()
-    
+    
     flash('Audit completed!', 'success')
-    
+    
     # 4. Immediately Queue Email Send (If recipient provided)
     if email_recipient and task_queue and send_report_email:
         task_queue.enqueue(send_report_email, report.id, email_recipient)
         flash(f'Report email queued for immediate send to {email_recipient}!', 'info')
-        
+        
     return redirect(url_for('view_report', report_id=report.id))
 
 
@@ -238,13 +238,13 @@ def view_report(report_id):
     if report.user_id != current_user.id:
         flash('Access denied', 'danger')
         return redirect(url_for('dashboard'))
-    
+    
     # Prepare data for report_detail.html
     metrics_data = json.loads(report.metrics_json)
     scores = AuditService.calculate_score(metrics_data)
-    metrics_by_cat = {cat: {k: metrics_data.get(k, 'N/A') for k in items} 
+    metrics_by_cat = {cat: {k: metrics_data.get(k, 'N/A') for k in items} 
                       for cat, items in AuditService.METRICS.items()}
-    
+    
     return render_template('report_detail.html', report=report, metrics=metrics_by_cat, scores=scores)
 
 @app.route('/report/pdf/<int:report_id>')
@@ -254,19 +254,19 @@ def report_pdf(report_id):
     if report.user_id != current_user.id:
         flash('Access denied', 'danger')
         return redirect(url_for('dashboard'))
-    
+    
     # Prepare data for report_pdf.html
     metrics_data = json.loads(report.metrics_json)
     scores = AuditService.calculate_score(metrics_data)
-    metrics_by_cat = {cat: {k: metrics_data.get(k, 'N/A') for k in items} 
+    metrics_by_cat = {cat: {k: metrics_data.get(k, 'N/A') for k in items} 
                       for cat, items in AuditService.METRICS.items()}
-    
+    
     def generate_pdf_content(report, metrics, scores):
         # Pass scores to report_pdf.html
         return render_template('report_pdf.html', report=report, metrics=metrics, scores=scores)
-    
+    
     html = generate_pdf_content(report, metrics_by_cat, scores)
-    
+    
     try:
         pdf = HTML(string=html).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 2cm } body { font-family: sans-serif; }')])
         response = make_response(pdf)
@@ -274,7 +274,7 @@ def report_pdf(report_id):
         response.headers['Content-Disposition'] = f'inline; filename=report_{report.id}.pdf'
         return response
     except Exception as e:
-        print(f"PDF GENERATION ERROR: {e}") 
+        print(f"PDF GENERATION ERROR: {e}") 
         flash('PDF generation failed. Check server logs for WeasyPrint/dependency issues.', 'danger')
         return redirect(url_for('view_report', report_id=report_id))
 
@@ -283,7 +283,7 @@ def report_pdf(report_id):
 def schedule_report():
     url = request.form.get('scheduled_website')
     email = request.form.get('scheduled_email')
-    
+    
     if not url or not url.startswith(('http://', 'https://')):
         flash('Invalid URL', 'danger')
         return redirect(url_for('dashboard'))
@@ -333,16 +333,16 @@ def admin_create_user():
     if not current_user.is_admin:
         flash('Admin access required to create users.', 'danger')
         return redirect(url_for('dashboard'))
-    
+    
     email = request.form.get('new_user_email')
     password = request.form.get('new_user_password')
-    is_admin_flag = request.form.get('is_admin_flag') == 'on' 
-    
+    is_admin_flag = request.form.get('is_admin_flag') == 'on' 
+    
     if User.query.filter_by(email=email).first():
         flash(f'User with email {email} already exists.', 'warning')
         return redirect(url_for('admin_dashboard'))
-    
-    if email and password and len(password) >= 6: 
+    
+    if email and password and len(password) >= 6: 
         try:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
             new_user = User(email=email, password=hashed_password, is_admin=is_admin_flag)
@@ -354,7 +354,7 @@ def admin_create_user():
             flash(f'Error creating user: {e}', 'danger')
     else:
         flash('Invalid email or password (must be at least 6 characters).', 'danger')
-    
+    
     return redirect(url_for('admin_dashboard'))
 
 
