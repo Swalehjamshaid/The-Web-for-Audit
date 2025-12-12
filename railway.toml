@@ -1,9 +1,11 @@
+# railway.toml - FINAL WORKING VERSION
 [build]
 builder = "NIXPACKS"
 
 [phases.setup]
-nixPkgs = ["glib","gobject-introspection","pango","cairo","gdk-pixbuf","harfbuzz","freetype","fontconfig","libjpeg","libpng","libwebp","libxml2","libxslt"]
-aptPkgs = ["libgobject-2.0-0","libglib2.0-0","libglib2.0-dev","libcairo2","libcairo2-dev","libpango-1.0-0","libpango1.0-dev","libgdk-pixbuf-2.0-0","libgdk-pixbuf2.0-dev","libatk1.0-0","shared-mime-info","libpq-dev","gcc"]
+nixPkgs = ["glib","gobject-introspection","pango","cairo","gdk-pixbuf","harfbuzz","freetype","fontconfig","libjpeg","libpng","libwebp","libxml2","libxslt","libffi", "libpq"]
+aptPkgs = ["libgobject-2.0-0","libglib2.0-0","libcairo2","libpango-1.0-0","libgdk-pixbuf-2.0-0","libatk1.0-0","shared-mime-info","libpq-dev","gcc"]
 
 [start]
-command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300"
+# CRUCIAL: Targets the 'application' instance and uses debug logging
+command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --log-level debug"
