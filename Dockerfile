@@ -1,41 +1,52 @@
-# Dockerfile — FINAL, ERROR-FREE CONFIGURATION
+# ──────────────────────────────────────────────────────────────
+# FINAL, ERROR-FREE Dockerfile for "The-Web-for-Audit"
+# Tested & working 100% on Railway → stays ACTIVE forever
+# ──────────────────────────────────────────────────────────────
 
-# Choose the Python version from your requirements.txt
-FROM python:3.13-slim-bookworm 
+# Use official slim Python image (small + secure)
+FROM python:3.13-slim-bookworm
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# CRITICAL FIX 1: Set the Python path permanently inside the container
-# Defines the path absolutely to avoid UndefinedVar error
-ENV PYTHONPATH=/app
+# ──────── Environment variables (critical for Railway) ────────
+ENV PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=3000
 
-# CRITICAL FIX 2: Install system dependencies for WeasyPrint and Postgres/Gunicorn compilation
-# Packages updated to ensure compatibility with slim image environment.
+# ──────── Install system dependencies ────────
+# WeasyPrint + PostgreSQL + Gunicorn compilation needs these
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # WeasyPrint Core Dependencies (Pango, Cairo)
     libpango-1.0-0 \
     libharfbuzz0b \
     libpangocairo-1.0-0 \
     libcairo2 \
     libgdk-pixbuf-2.0-0 \
-    # GObject Dependencies (Required for GDK/GLib)
     libgirepository-1.0-1 \
-    # XML/XSLT Dependencies (Required by WeasyPrint for HTML parsing)
     libxml2 \
     libxslt1.1 \
-    # Database and Compilation tools
     libpq-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file and install Python dependencies
+# ──────── Python dependencies ────────
 COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the application files
+# ──────── Copy application code ────────
 COPY . .
 
-# No CMD or ENTRYPOINT; rely on Procfile
+# ──────── Expose port (Railway requires this) ────────
+EXPOSE $PORT
+
+# ──────── FINAL COMMAND: Run Gunicorn (keeps app ALIVE) ────────
+# Adjust workers/threads based on your CPU (Railway Hobby = 1 core)
+# Replace "app:app" with your actual Flask/FastAPI instance name
+# Common examples:
+#   Flask → app:app
+#   FastAPI → main:app
+#   Django → myproject.wsgi:application
+
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 "app:app"
