@@ -1,8 +1,10 @@
+
 # railway.toml - FINAL WORKING VERSION
 [build]
 builder = "NIXPACKS"
 
 [phases.setup]
+# System dependencies for WeasyPrint (PDF) and libpq-dev (PostgreSQL)
 nixPkgs = ["glib","gobject-introspection","pango","cairo","gdk-pixbuf","harfbuzz","freetype","fontconfig","libjpeg","libpng","libwebp","libxml2","libxslt","libffi", "libpq"]
 aptPkgs = ["libgobject-2.0-0","libglib2.0-0","libcairo2","libpango-1.0-0","libgdk-pixbuf-2.0-0","libatk1.0-0","shared-mime-info","libpq-dev","gcc"]
 
