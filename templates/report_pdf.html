@@ -1,162 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Web Audit Report - {{ report.website_url }}</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 0;
-            color: #333;
-        }
-        .header {
-            background-color: #007bff; /* Blue for a professional look */
-            color: white;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .header h1 { margin: 0; font-size: 24px; }
-        .header p { margin: 5px 0 0; font-size: 14px; }
-        
-        .section {
-            margin-bottom: 25px;
-            padding: 0 20px;
-        }
-        .section h2 {
-            font-size: 18px;
-            color: #007bff;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-        }
-        
-        /* Scorecard Styles */
-        .score-container {
-            display: flex; 
-            justify-content: space-around;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .score-card {
-            width: 18%; /* Adjusted width for 5 cards */
-            border: 1px solid #ddd;
-            padding: 10px 5px;
-            border-radius: 5px;
-        }
-        .score-value {
-            font-size: 20px; /* Reduced size for 5 cards */
-            font-weight: bold;
-        }
-        .score-label {
-            font-size: 11px;
-            color: #555;
-        }
-
-        /* Metric Table Styles */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        .table th, .table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            font-size: 12px;
-        }
-        .table th {
-            background-color: #f8f8f8;
-            font-weight: bold;
-        }
-        
-        /* Status Badges */
-        .status-success { color: green; }
-        .status-warning { color: orange; }
-        .status-danger { color: red; }
-
-        /* Page break hint for long reports */
-        .category-break {
-            page-break-before: always;
-            margin-top: 30px;
-        }
+        body { font-family: "DejaVu Sans", sans-serif; margin: 2cm; }
+        h1, h2 { color: #1a5fb4; }
+        .score { font-size: 48px; font-weight: bold; }
+        .badge { padding: 8px; border-radius: 5px; color: white; }
+        .excellent { background: #28a745; }
+        .good { background: #17a2b8; }
+        .fair { background: #ffc107; color: black; }
+        .poor { background: #dc3545; }
     </style>
 </head>
 <body>
+    <h1>FF Tech WebAudit Report</h1>
+    <p><strong>Website:</strong> {{ report.website_url }}</p>
+    <p><strong>Date:</strong> {{ report.date_audited.strftime("%B %d, %Y") }}</p>
 
-    <div class="header">
-        <h1>FF Tech Web Audit Report</h1>
-        <p>Website: {{ report.website_url }}</p>
-        <p>Audited on: {{ report.date_audited.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-    </div>
+    <table width="100%" style="margin: 30px 0;">
+        <tr>
+            <td width="33%" align="center">
+                <div class="score">{{ data.performance }}%</div>
+                <div>Performance</div>
+            </td>
+            <td width="33%" align="center">
+                <div class="score">{{ data.security }}%</div>
+                <div>Security</div>
+            </td>
+            <td width="33%" align="center">
+                <div class="score">{{ data.accessibility }}%</div>
+                <div>Accessibility</div>
+            </td>
+        </tr>
+    </table>
 
-    <div class="section">
-        <h2>Overall Scores (Based on Successful Metrics)</h2>
-        <div class="score-container">
-            <div class="score-card">
-                <p class="score-value" style="color: {% if scores.performance >= 90 %}green{% elif scores.performance >= 70 %}orange{% else %}red{% endif %};">{{ scores.performance }}%</p>
-                <p class="score-label">Performance</p>
-            </div>
-            
-            <div class="score-card">
-                <p class="score-value" style="color: {% if scores.security >= 90 %}green{% elif scores.security >= 70 %}orange{% else %}red{% endif %};">{{ scores.security }}%</p>
-                <p class="score-label">Security</p>
-            </div>
-            
-            <div class="score-card">
-                <p class="score-value" style="color: {% if scores.accessibility >= 90 %}green{% elif scores.accessibility >= 70 %}orange{% else %}red{% endif %};">{{ scores.accessibility }}%</p>
-                <p class="score-label">Accessibility</p>
-            </div>
-            
-            <div class="score-card">
-                <p class="score-value" style="color: {% if scores.tech_seo >= 90 %}green{% elif scores.tech_seo >= 70 %}orange{% else %}red{% endif %};">{{ scores.tech_seo }}%</p>
-                <p class="score-label">Technical SEO</p>
-            </div>
-
-            <div class="score-card">
-                <p class="score-value" style="color: {% if scores.ux >= 90 %}green{% elif scores.ux >= 70 %}orange{% else %}red{% endif %};">{{ scores.ux }}%</p>
-                <p class="score-label">UX & Content</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="section">
-        {% for category, metrics_dict in metrics.items() %}
-            <h2 {% if loop.index > 1 %}class="category-break"{% endif %}>{{ category }}</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th style="width: 70%;">Metric Name</th>
-                        <th style="width: 30%;">Result/Value</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for metric_name, value in metrics_dict.items() %}
-                    <tr>
-                        <td>{{ metric_name }}</td>
-                        <td class="metric-result">
-                            {% set lower_value = value | lower %}
-                            {% if 'excellent' in lower_value or 'good' in lower_value %}
-                                <span class="status-success">{{ value }}</span>
-                            {% elif 'fair' in lower_value %}
-                                <span class="status-warning">{{ value }}</span>
-                            {% elif 'poor' in lower_value %}
-                                <span class="status-danger">{{ value }}</span>
-                            {% else %}
-                                <span>{{ value }}</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <h2>Detailed Audit Results</h2>
+    {% for category, info in data.categories.items() %}
+    <h3>{{ category }}</h3>
+    <p><em>{{ info.desc }}</em></p>
+    <ul>
+        {% for item in info.items %}
+        <li>
+            <strong>{{ item }}:</strong>
+            <span class="badge 
+                {% if data.metrics[item] == 'Excellent' %}excellent
+                {% elif data.metrics[item] == 'Good' %}good
+                {% elif data.metrics[item] == 'Fair' %}fair
+                {% else %}poor{% endif %}">
+                {{ data.metrics[item] }}
+            </span>
+        </li>
         {% endfor %}
-    </div>
+    </ul>
+    <hr>
+    {% endfor %}
 
-    <div style="text-align: center; margin-top: 50px; font-size: 10px; color: #777;">
-        Report generated by FF Tech WebAudit.
-    </div>
-
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center;">
+        <p>Generated by FF Tech WebAudit • Professional Website Audit Platform</p>
+    </footer>
 </body>
 </html>
