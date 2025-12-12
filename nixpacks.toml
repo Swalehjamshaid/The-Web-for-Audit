@@ -1,31 +1,47 @@
+[build]
+# Tell Railway to use Nixpacks (default) with custom system packages
+nixpacksPlan = true
+
 [phases.setup]
-nixPkgs = [
-    "glib",
-    "gobject-introspection",
-    "pango",
-    "cairo",
-    "gdk-pixbuf",
-    "atk",
-    "harfbuzz",
-    "freetype",
-    "fontconfig",
-    "libjpeg",
-    "libpng",
-    "libwebp",
-    "libxml2",
-    "libxslt"
+nixLibs = [
+  "glib",
+  "gobject-introspection",
+  "pango",
+  "cairo",
+  "gdk-pixbuf",
+  "atk",
+  "harfbuzz",
+  "freetype",
+  "fontconfig",
+  "libjpeg",
+  "libpng",
+  "libwebp",
+  "libxml2",
+  "libxslt"
+]
+aptPkgs = [
+  "libgobject-2.0-0",
+  "libglib2.0-0",
+  "libglib2.0-dev",
+  "libcairo2",
+  "libcairo2-dev",
+  "libpango-1.0-0",
+  "libpango1.0-dev",
+  "libgdk-pixbuf-2.0-0",
+  "libgdk-pixbuf2.0-dev",
+  "libatk1.0-0",
+  "shared-mime-info",
+  "libpq-dev",          # ← if you ever use PostgreSQL
+  "gcc"                 # ← needed for any psycopg2 compilation
 ]
 
-aptPkgs = [
-    "libgobject-2.0-0",
-    "libglib2.0-0",
-    "libglib2.0-dev",
-    "libcairo2",
-    "libcairo2-dev",
-    "libpango-1.0-0",
-    "libpango1.0-dev",
-    "libgdk-pixbuf-2.0-0",
-    "libgdk-pixbuf2.0-dev",
-    "libatk1.0-0",
-    "shared-mime-info"
-]
+# Start command – this is what finally fixes the "Completed" status
+[start]
+command = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --access-logfile - --error-logfile -"
+
+# Optional: environment variables (recommended)
+[envs]
+PYTHONPATH = "/app"
+PORT = "${{PORT}}"
+PYTHONDONTWRITEBYTECODE = "1"
+PYTHONUNBUFFERED = "1"
