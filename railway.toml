@@ -1,12 +1,9 @@
-# railway.toml — THIS IS THE ONLY FILE YOU NEED
-# Railway will use this 100%. nixpacks.toml is ignored if this exists.
-
 [build]
-builder = "nixpacks"
+builder = "NIXPACKS"  # Explicitly set to avoid conflicts
 
-# WeasyPrint + PostgreSQL system dependencies
+# WeasyPrint system deps (fixed keys: nixPkgs, not nixLibs)
 [phases.setup]
-nixLibs = [
+nixPkgs = [
   "glib", "gobject-introspection", "pango", "cairo", "gdk-pixbuf",
   "harfbuzz", "freetype", "fontconfig", "libjpeg", "libpng",
   "libwebp", "libxml2", "libxslt"
@@ -18,18 +15,26 @@ aptPkgs = [
   "shared-mime-info", "libpq-dev", "gcc"
 ]
 
-# ──────────────── Services ────────────────
+# Web Service (main app — already working!)
 [[services]]
 name = "web"
-[start]
-command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 1000 --timeout 300 --access-logfile -"
+[services.web]
+primaryRegion = "asia-southeast1"  # Match your screenshot region
+[services.web.start]
+cmd = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 1000 --timeout 300 --access-logfile - --error-logfile -"
 
+# Worker Service (RQ + email)
 [[services]]
 name = "worker"
-[start]
-command = "python worker.py"
+[services.worker]
+primaryRegion = "asia-southeast1"
+[services.worker.start]
+cmd = "python worker.py"
 
+# Scheduler Service (always-on)
 [[services]]
 name = "scheduler"
-[start]
-command = "python scheduler.py"
+[services.scheduler]
+primaryRegion = "asia-southeast1"
+[services.scheduler.start]
+cmd = "python scheduler.py"
