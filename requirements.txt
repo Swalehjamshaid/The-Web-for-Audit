@@ -1,29 +1,14 @@
-# requirements.txt — FINAL & BULLETPROOF (December 2025)
-# Tested + working perfectly on Railway with WeasyPrint PDFs + PostgreSQL + Gunicorn
 
 Flask==3.0.3
 Flask-SQLAlchemy==3.1.1
 Flask-Bcrypt==1.0.1
 Flask-Login==0.6.3
 Flask-Mail==0.10.0
-Werkzeug==3.0.4
-
-# Database
-psycopg[binary]==3.2.3                  # ← Binary wheel = no gcc needed at runtime
-
-# PDF Generation (WeasyPrint + all its C dependencies via cairoffi)
 WeasyPrint==62.3
 cairocffi==1.7.1
-cffi==1.17.1
-pydyf==0.11.0
-
-# Background Jobs
+psycopg[binary]==3.2.3
 redis==5.0.8
 rq==1.16.2
-
-# Environment & Production Server
-python-dotenv==1.0.1
 gunicorn==23.0.0
-
-# Optional but recommended for better performance/logging
-gevent==24.2.1                          # ← Enables --worker-class gevent (faster concurrency)
+gevent==24.2.1
+python-dotenv==1.0.1
