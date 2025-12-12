@@ -16,7 +16,7 @@ from flask_mail import Mail
 from weasyprint import HTML, CSS
 from redis import Redis
 from rq import Queue
-from sqlalchemy.exc import OperationalError # Crucial for catching DB connection errors
+from sqlalchemy.exc import OperationalError 
 
 load_dotenv()
 
@@ -39,7 +39,6 @@ def initialize_db_with_retries(app, db, retries=5, delay=5):
                     print("Failed to initialize database after multiple retries. This is a fatal error.")
                     return False
             except Exception as e:
-                # Catch generic errors outside of OperationalError
                 print(f"Fatal error during DB initialization: {e}")
                 return False
         return False
@@ -79,7 +78,7 @@ def create_app():
     login_manager.login_view = 'login'
     mail = Mail(app)
 
-    # Redis/RQ Setup (NOTE: Worker is disabled in railway.toml)
+    # Redis/RQ Setup
     try:
         redis_conn = Redis.from_url(os.getenv('REDIS_URL') or 'redis://localhost:6379')
         redis_conn.ping()
@@ -115,7 +114,7 @@ def create_app():
         accessibility_score = db.Column(db.Integer, default=0)
         user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # === AUDIT CATEGORIES === (Full 10-point logic for scoring)
+    # === AUDIT CATEGORIES ===
     AUDIT_CATEGORIES = {
         "Technical SEO Audit": {"desc": "A technical assessment...", "items": ["Crawlability (robots.txt, sitemap, crawl errors)", "Indexability (noindex tags, canonicals, duplicate pages)", "Internal linking (broken links, orphan pages, link depth)", "Redirects (301/302, redirect loops, chains)", "URL structure and site architecture"]},
         "Performance & Core Web Vitals": {"desc": "Evaluates how fast...", "items": ["Core Web Vitals (LCP, INP/FID, CLS)", "Page speed & load time", "Server performance (TTFB)", "Image optimization (compression, WebP)", "CSS/JS optimization", "CDN, caching, lazy loading", "Mobile performance"]},
@@ -165,7 +164,7 @@ def create_app():
             return {**scores, "metrics": metrics, "categories": AUDIT_CATEGORIES}
 
 
-    # === ROUTES ===
+    # === ROUTES === (Unchanged)
     @app.route("/")
     def index():
         return redirect(url_for("login"))
