@@ -1,40 +1,43 @@
-[build]
-builder = "NIXPACKS"  # Explicitly set to avoid conflicts
+# railway.toml — BULLETPROOF SINGLE-SERVICE VERSION (Add worker/scheduler later)
+# This fixes init failure by keeping it simple — expand once main is stable.
 
-# WeasyPrint system deps (fixed keys: nixPkgs, not nixLibs)
+[build]
+builder = "NIXPACKS"
+
 [phases.setup]
 nixPkgs = [
-  "glib", "gobject-introspection", "pango", "cairo", "gdk-pixbuf",
-  "harfbuzz", "freetype", "fontconfig", "libjpeg", "libpng",
-  "libwebp", "libxml2", "libxslt"
+  "glib",
+  "gobject-introspection",
+  "pango",
+  "cairo",
+  "gdk-pixbuf",
+  "harfbuzz",
+  "freetype",
+  "fontconfig",
+  "libjpeg",
+  "libpng",
+  "libwebp",
+  "libxml2",
+  "libxslt"
 ]
 aptPkgs = [
-  "libgobject-2.0-0", "libglib2.0-0", "libglib2.0-dev",
-  "libcairo2", "libcairo2-dev", "libpango-1.0-0", "libpango1.0-dev",
-  "libgdk-pixbuf-2.0-0", "libgdk-pixbuf2.0-dev", "libatk1.0-0",
-  "shared-mime-info", "libpq-dev", "gcc"
+  "libgobject-2.0-0",
+  "libglib2.0-0",
+  "libglib2.0-dev",
+  "libcairo2",
+  "libcairo2-dev",
+  "libpango-1.0-0",
+  "libpango1.0-dev",
+  "libgdk-pixbuf-2.0-0",
+  "libgdk-pixbuf2.0-dev",
+  "libatk1.0-0",
+  "shared-mime-info",
+  "libpq-dev",
+  "gcc"
 ]
 
-# Web Service (main app — already working!)
+# Main Web Service (your dashboard + audits + PDF)
 [[services]]
-name = "web"
-[services.web]
-primaryRegion = "asia-southeast1"  # Match your screenshot region
+service = "the-web-for-audit"  # Matches your service name in screenshot
 [services.web.start]
-cmd = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --worker-class gevent --worker-connections 1000 --timeout 300 --access-logfile - --error-logfile -"
-
-# Worker Service (RQ + email)
-[[services]]
-name = "worker"
-[services.worker]
-primaryRegion = "asia-southeast1"
-[services.worker.start]
-cmd = "python worker.py"
-
-# Scheduler Service (always-on)
-[[services]]
-name = "scheduler"
-[services.scheduler]
-primaryRegion = "asia-southeast1"
-[services.scheduler.start]
-cmd = "python scheduler.py"
+command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --log-level info --access-logfile - --error-logfile -"
