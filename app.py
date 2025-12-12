@@ -164,7 +164,7 @@ def create_app():
             return {**scores, "metrics": metrics, "categories": AUDIT_CATEGORIES}
 
 
-    # === ROUTES === (Unchanged)
+    # === ROUTES ===
     @app.route("/")
     def index():
         return redirect(url_for("login"))
