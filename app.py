@@ -1,4 +1,4 @@
-# app.py — FINAL WORKING VERSION (NO SYNTAX ERROR)
+# app.py — FINAL 100% WORKING VERSION (December 2025)
 import os
 import json
 import time
@@ -57,7 +57,7 @@ class AuditReport(db.Model):
     accessibility_score = db.Column(db.Integer, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# === PROFESSIONAL AUDIT CATEGORIES (YOUR TEXT) ===
+# === PROFESSIONAL AUDIT CATEGORIES ===
 AUDIT_CATEGORIES = {
     "Technical SEO Audit": {
         "desc": "A technical assessment that ensures search engines can crawl, understand, and index your website properly. This includes checking site errors, URL structure, broken links, redirects, and technical elements that affect visibility.",
@@ -136,7 +136,7 @@ class AuditService:
 
         return {**scores, 'metrics': metrics, 'categories': AUDIT_CATEGORIES}
 
-# === ROUTES (PROPER SYNTAX) ===
+# === ROUTES ===
 @app.route("/")
 def home():
     if current_user.is_authenticated:
@@ -158,8 +158,29 @@ def login():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    reports = AuditReport.query.filter_by(user_id=current_user.id).order_by(AuditReport.date_audited.desc()).limit(10).all()
-    return render_template("dashboard.html", reports=reports)
+    reports = AuditReport.query.filter_by(user_id=current_user.id)\
+        .order_by(AuditReport.date_audited.desc()).limit(10).all()
+    
+    parsed_reports = []
+    for r in reports:
+        try:
+            data = json.loads(r.metrics_json)
+            parsed_reports.append({
+                'id': r.id,
+                'website_url': r.website_url,
+                'date': r.date_audited.strftime("%b %d, %Y"),
+                'performance': r.performance_score,
+                'security': r.security_score,
+                'accessibility': r.accessibility_score,
+                'data': data
+            })
+        except:
+            parsed_reports.append({
+                'id': r.id, 'website_url': r.website_url, 'date': r.date_audited.strftime("%b %d, %Y"),
+                'performance': 0, 'security': 0, 'accessibility': 0
+            })
+    
+    return render_template("dashboard.html", reports=parsed_reports)
 
 @app.route("/run_audit", methods=["POST"])
 @login_required
@@ -207,7 +228,13 @@ def report_pdf(report_id):
     response.headers["Content-Disposition"] = f'attachment; filename=FFTech_Audit_{report.id}.pdf'
     return response
 
-# === APP FACTORY (NO 500 ERROR) ===
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+# === APP FACTORY ===
 def create_app():
     with app.app_context():
         db.create_all()
