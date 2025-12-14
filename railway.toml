@@ -1,13 +1,9 @@
-
-# railway.toml - FINAL WORKING VERSION
 [build]
-builder = "NIXPACKS"
-
-[phases.setup]
-# System dependencies for WeasyPrint (PDF) and libpq-dev (PostgreSQL)
-nixPkgs = ["glib","gobject-introspection","pango","cairo","gdk-pixbuf","harfbuzz","freetype","fontconfig","libjpeg","libpng","libwebp","libxml2","libxslt","libffi", "libpq"]
-aptPkgs = ["libgobject-2.0-0","libglib2.0-0","libcairo2","libpango-1.0-0","libgdk-pixbuf-2.0-0","libatk1.0-0","shared-mime-info","libpq-dev","gcc"]
+# Optional: Specify the build command if needed, though Railway detects Python projects.
+# build_command = "pip install -r requirements.txt"
 
 [start]
-# CRITICAL FIX: Targets the 'application' instance, resolving the "Failed to find attribute 'app'" error.
-command = "gunicorn 'app:application' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --log-level debug"
+# This command tells Gunicorn to bind to all interfaces (0.0.0.0) 
+# and use the port provided by the Railway environment variable ($PORT).
+# Replace 'app:app' with 'your_flask_app_file_name:app_instance_name' if needed.
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
