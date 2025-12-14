@@ -1,8 +1,10 @@
-# 1. CRITICAL FIX: The base image instruction MUST be the first line.
-# Use this line to fix the "no build stage" error.
+# 1. Base Image: Use a slim Python image for efficiency
 FROM python:3.10-slim-bullseye
 
-# 2. INSTALL SYSTEM DEPENDENCIES
+# 2. Set Working Directory
+WORKDIR /app
+
+# 3. Install System Dependencies: Required for packages like psycopg2 and weasyprint
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
@@ -17,16 +19,13 @@ RUN apt-get update \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. SET UP WORK DIRECTORY
-WORKDIR /app
-
-# 4. INSTALL PYTHON DEPENDENCIES
+# 4. Copy and Install Python Dependencies
 COPY requirements.txt /app/
 RUN pip install -r requirements.txt
 
-# 5. COPY APPLICATION CODE
+# 5. Copy Application Code
 COPY . /app
 
-# 6. APPLICATION ENTRYPOINT - FIXED for cloud platforms
-# Uses $PORT if provided by the platform, falls back to 8000 for local development
-CMD ["gunicorn", "--bind", "0.0.0.0:${PORT:-8000}", "app:application"]
+# 6. Default Command: Use the correct shell form for robust variable binding.
+# This ensures that if railway.toml is missing, the app still attempts to start correctly.
+CMD gunicorn app:app --bind 0.0.0.0:$PORT
