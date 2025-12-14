@@ -2,7 +2,7 @@
 # Use this line to fix the "no build stage" error.
 FROM python:3.10-slim-bullseye
 
-# 2. INSTALL SYSTEM DEPENDENCIES (Your previous code)
+# 2. INSTALL SYSTEM DEPENDENCIES
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
@@ -27,5 +27,6 @@ RUN pip install -r requirements.txt
 # 5. COPY APPLICATION CODE
 COPY . /app
 
-# 6. APPLICATION ENTRYPOINT (This command fixes the Gunicorn error)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:application"]
+# 6. APPLICATION ENTRYPOINT - FIXED for cloud platforms
+# Uses $PORT if provided by the platform, falls back to 8000 for local development
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT:-8000}", "app:application"]
