@@ -1,11 +1,5 @@
-[build]
-# Optional: This tells Railway how to build your project.
-# Since you have a requirements.txt and a Dockerfile, 
-# Railway often handles this automatically, but it's good practice.
-# build_command = "pip install -r requirements.txt"
-
 [start]
-# This is the CRUCIAL line that fixes the port error.
-# It tells Gunicorn to look in your 'app.py' file for the 'app' instance
-# and bind to the correct port provided by Railway ($PORT).
+# This command launches Gunicorn, using your 'app.py' file and 'app' instance name.
+# It uses the shell form to ensure the $PORT variable is correctly read by the shell,
+# which fixes the 'Error: ${PORT' is not a valid port number.' issue.
 cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
