@@ -1,9 +1,11 @@
 [build]
-# Optional: Specify the build command if needed, though Railway detects Python projects.
+# Optional: This tells Railway how to build your project.
+# Since you have a requirements.txt and a Dockerfile, 
+# Railway often handles this automatically, but it's good practice.
 # build_command = "pip install -r requirements.txt"
 
 [start]
-# This command tells Gunicorn to bind to all interfaces (0.0.0.0) 
-# and use the port provided by the Railway environment variable ($PORT).
-# Replace 'app:app' with 'your_flask_app_file_name:app_instance_name' if needed.
+# This is the CRUCIAL line that fixes the port error.
+# It tells Gunicorn to look in your 'app.py' file for the 'app' instance
+# and bind to the correct port provided by Railway ($PORT).
 cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
