@@ -51,4 +51,6 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8080
 
 # The CMD is mainly a fallback; the actual start command is set in railway.toml
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2"]
+# FIX: The path is changed from 'app:app' to 'app.app:app' because 'app.py' is now
+# nested inside the 'app' directory, which is the container's WORKDIR.
+CMD ["sh", "-c", "gunicorn app.app:app --bind 0.0.0.0:$PORT --workers 2"]
