@@ -14,9 +14,6 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 db = SQLAlchemy(app)
-
-# REMOVED: db.create_all() from module level. Use one-off command or Flask-Migrate in production.
-
 bcrypt = Bcrypt(app)
 mail = Mail(app)
 login_manager = LoginManager(app)
@@ -55,13 +52,11 @@ class AuditReport(db.Model):
 
 # ---------------- Login ----------------
 @login_manager.user_loader
-# Add retry logic for transient database connection issues
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=30))
 def load_user(user_id):
     try:
         return User.query.get(int(user_id))
     except sqlalchemy.exc.OperationalError:
-        # Re-raise the exception to allow 'tenacity' to handle the retry mechanism
         print("Database connection failed during load_user, retrying...")
         raise
 
@@ -149,9 +144,33 @@ def admin_create_user():
     flash(f"User {user.email} created",'success')
     return redirect(url_for('admin_dashboard'))
 
-if __name__=='__main__':
-    # This block runs only when running 'python app.py' locally.
-    with app.app_context():
-        db.create_all() # Creates tables for local SQLite use
-    app.run(host='0.0.0.0', port=5000)
+# ---------------- Initialization (CRITICAL FIX for Tables and Users) ----------------
+with app.app_context():
+    # 1. CRITICAL: Create all database tables if they do not exist
+    # This addresses the "relation user does not exist" error during deployment boot.
+    db.create_all()
+    
+    # 2. CRITICAL: Create an initial admin user if the user table is empty
+    initial_email = 'admin@yoursite.com'        # <--- IMPORTANT: SET YOUR ADMIN EMAIL
+    initial_password = 'YourSecureAdminPassword123' # <--- IMPORTANT: SET YOUR ADMIN PASSWORD
+    
+    # Check if the admin user already exists
+    if not User.query.filter_by(email=initial_email).first():
+        admin_user = User(
+            email=initial_email,
+            name='System Admin',
+            role='admin'
+        )
+        # Hash and set the password
+        admin_user.set_password(initial_password) 
+        
+        db.session.add(admin_user)
+        db.session.commit()
+        print(f"--- Created initial admin user: {initial_email} ---")
 
+if __name__=='__main__':
+    # This block is only for local development/running python app.py
+    with app.app_context():
+        # Ensure tables are created for local runs too
+        db.create_all() 
+    app.run(host='0.0.0.0', port=5000)
