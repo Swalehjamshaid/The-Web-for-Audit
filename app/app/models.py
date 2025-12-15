@@ -1,10 +1,12 @@
 # /app/app/models.py
 
-from .app import db  # Import the db object initialized in app.py
 from datetime import datetime
 import json
+# CRITICAL FIX: Use the absolute package path to import 'db'. 
+# This prevents the circular import problem when Gunicorn loads the application.
+from app.app.app import db  
 
-# --- Example Models (REQUIRED FOR db.create_all) ---
+# --- Example Models ---
 
 class AuditReport(db.Model):
     __tablename__ = 'audit_reports'
