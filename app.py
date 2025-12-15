@@ -138,4 +138,6 @@ def admin_create_user():
     return redirect(url_for('admin_dashboard'))
 
 if __name__=='__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)), debug=True)
+    # Note: Flask runs locally here. On Railway, Gunicorn runs the app.
+    # The application instance itself is named 'app'
+    pass
