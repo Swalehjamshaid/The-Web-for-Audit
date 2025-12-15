@@ -147,6 +147,10 @@ def admin_create_user():
     return redirect(url_for('admin_dashboard'))
 
 if __name__=='__main__':
-    # Note: Flask runs locally here. On Railway, Gunicorn runs the app.
+    # Note: Flask runs locally here. On Railway, Gunicorn runs the app in production.
     # The application instance itself is named 'app'
-    pass
+    
+    # ADDED: Create database tables if they don't exist when running locally for testing
+    with app.app_context():
+        db.create_all()
+    app.run(host='0.0.0.0', port=5000) # Use port 5000 for local development
