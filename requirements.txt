@@ -3,15 +3,9 @@ gunicorn>=20.1.0,<22.0
 rq>=1.15.0,<2.0
 Pillow>=10.0.0,<11.0
 cairocffi>=1.4.1,<2.0
-
-# Core Flask Extensions (Fixes previous ModuleNotFound errors)
 Flask-SQLAlchemy
 Flask-Bcrypt
 Flask-Mail
 Flask-Login
-
-# Database Driver (Fixes "No module named 'psycopg2'" error)
-psycopg2-binary
-
-# Other utilities (if needed, based on common Flask practices)
+psycopg2-binary  # CRITICAL: Fixes the missing PostgreSQL driver error
 python-dotenv
