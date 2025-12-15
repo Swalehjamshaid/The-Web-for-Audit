@@ -1,4 +1,4 @@
-# /app/app/app.py
+# /app/app/app.py (Updated for Robustness)
 
 import os
 import click
@@ -7,23 +7,32 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc
 
 # --- CRITICAL IMPORTS FOR PACKAGE STRUCTURE FIX ---
-from . import models          # Imports models for db.create_all
 from . import audit_service   # FIX: Relative import for audit service
 from .config import config_map
-# from flask_mail import Mail # Uncomment if using email
 
-# Initialize extensions globally
+# 1. Initialize extensions globally
 db = SQLAlchemy()
-# mail = Mail()
+# mail = Mail() # Initialize other extensions globally here
+
+# 2. Define a function to load models (prevents circular imports on startup)
+def import_models():
+    """Import models to ensure they are registered with SQLAlchemy."""
+    from . import models
+    # You can return models if needed, but the import itself registers them with db.Model.metadata
+    pass
 
 # Function to create and configure the Flask application
 def create_app(config_name=os.getenv('FLASK_ENV', 'default')):
     app = Flask(__name__)
     app.config.from_object(config_map.get(config_name, 'default')) 
 
-    # Initialize extensions with the application
+    # 3. Initialize extensions with the application
     db.init_app(app)
     # mail.init_app(app)
+    
+    # 4. Load models now that 'db' is initialized with the app
+    with app.app_context():
+        import_models()
     
     # --- Routes ---
     @app.route('/')
@@ -40,8 +49,7 @@ def create_app(config_name=os.getenv('FLASK_ENV', 'default')):
 
     return app
 
-# --- CLI Commands for Database Management ---
-
+# --- CLI Commands for Database Management (Remains the same) ---
 def register_cli(app):
     @app.cli.group()
     def db_cli():
@@ -59,7 +67,6 @@ def register_cli(app):
                     print("⚠️ Dropping existing tables...")
                     db.drop_all()
                 
-                # CRITICAL: This is the line that creates the tables in Railway
                 db.create_all() 
                 print("✅ Database tables created successfully.")
             except exc.OperationalError as e:
@@ -67,5 +74,5 @@ def register_cli(app):
                 print("ACTION REQUIRED: Check your PostgreSQL server status and config.")
                 exit(1)
 
-# Entry point for Gunicorn
+# 5. Entry point for Gunicorn: This MUST be the last line that defines 'app'
 app = create_app()
