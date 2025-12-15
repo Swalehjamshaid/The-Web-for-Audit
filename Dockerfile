@@ -1,11 +1,7 @@
-# ---------------------------
 # Base image
-# ---------------------------
 FROM python:3.10-slim
 
-# ---------------------------
-# System dependencies
-# ---------------------------
+# System dependencies: Required for packages like psycopg2, weasyprint (cairocffi), and general compilation
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
@@ -22,14 +18,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# ---------------------------
 # Set working directory
-# ---------------------------
 WORKDIR /app
 
-# ---------------------------
 # Copy requirements and install
-# ---------------------------
 COPY requirements.txt .
 
 # Upgrade pip first
@@ -38,27 +30,19 @@ RUN pip install --upgrade pip
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ---------------------------
 # Copy project files
-# ---------------------------
 COPY . .
 
-# ---------------------------
 # Environment variables for Railway
-# ---------------------------
 ENV PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
     PORT=8080 \
     RQ_QUEUE=default
 
-# ---------------------------
 # Expose port
-# ---------------------------
 EXPOSE 8080
 
-# ---------------------------
-# Start Flask + RQ
-# ---------------------------
+# Start Flask + RQ (CMD is overridden by railway.toml, but kept as a fallback)
 CMD ["sh", "-c", "\
     echo 'Starting RQ worker...' & \
     rq worker $RQ_QUEUE & \
