@@ -14,6 +14,16 @@ port = 8080
 dockerfile = "Dockerfile"
 start = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 300"
 
+[[services.env]]
+REDIS_URL = "redis://:@your-redis-host:6379/0"
+SECRET_KEY = "supersecretkey"
+DATABASE_URL = "postgresql://username:password@host:5432/dbname"
+MAIL_SERVER = "smtp.example.com"
+MAIL_PORT = "587"
+MAIL_USERNAME = "your_email@example.com"
+MAIL_PASSWORD = "your_email_password"
+RQ_QUEUE = "default"
+
 # ---------------------------
 # Worker service — RQ worker
 # ---------------------------
@@ -22,6 +32,16 @@ name = "worker"
 env = "production"
 dockerfile = "Dockerfile"
 start = "rq worker $RQ_QUEUE"
+
+[[services.env]]
+REDIS_URL = "redis://:@your-redis-host:6379/0"
+SECRET_KEY = "supersecretkey"
+DATABASE_URL = "postgresql://username:password@host:5432/dbname"
+MAIL_SERVER = "smtp.example.com"
+MAIL_PORT = "587"
+MAIL_USERNAME = "your_email@example.com"
+MAIL_PASSWORD = "your_email_password"
+RQ_QUEUE = "default"
 
 # ---------------------------
 # Scheduler service — runs daily tasks
@@ -32,10 +52,7 @@ env = "production"
 dockerfile = "Dockerfile"
 start = "python scheduler.py"
 
-# ---------------------------
-# Environment variables
-# ---------------------------
-[services.env]
+[[services.env]]
 REDIS_URL = "redis://:@your-redis-host:6379/0"
 SECRET_KEY = "supersecretkey"
 DATABASE_URL = "postgresql://username:password@host:5432/dbname"
