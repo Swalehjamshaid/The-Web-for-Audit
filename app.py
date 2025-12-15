@@ -7,6 +7,8 @@ from datetime import datetime
 import json
 from config import Config
 from audit_service import AuditService
+import sqlalchemy # Import SQLAlchemy to reference OperationalError
+from tenacity import retry, stop_after_attempt, wait_exponential # Import tenacity
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -17,10 +19,7 @@ mail = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# >>> ADDED DEBUGGING CODE <<<
-print("SQLAlchemy Engine Options Loaded:")
-print(app.config.get('SQLALCHEMY_ENGINE_OPTIONS'))
-# <<< END ADDED DEBUGGING CODE <<<
+# Debugging code removed.
 
 # ---------------- Models ----------------
 class User(db.Model):
@@ -55,8 +54,15 @@ class AuditReport(db.Model):
 
 # ---------------- Login ----------------
 @login_manager.user_loader
+# Add retry logic for transient database connection issues
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=30))
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    try:
+        return User.query.get(int(user_id))
+    except sqlalchemy.exc.OperationalError:
+        # Re-raise the exception to allow 'tenacity' to handle the retry mechanism
+        print("Database connection failed during load_user, retrying...")
+        raise
 
 # ---------------- Routes ----------------
 @app.route('/')
