@@ -33,7 +33,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 
 # Install Python dependencies (Ensures psycopg2-binary and Flask-SQLAlchemy are installed)
-# >>> ADDED tenacity here for database retry logic <<<
+# ADDED tenacity here for database retry logic
 RUN pip install --no-cache-dir -r requirements.txt tenacity
 
 # ---------------------------
