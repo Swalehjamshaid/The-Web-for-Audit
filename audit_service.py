@@ -1,5 +1,5 @@
 import random
-# Ensure audit_categories is accessible (it should be in the same directory or package)
+# Use a relative import assuming audit_categories.py is in the same package
 from .audit_categories import AUDIT_CATEGORIES 
 
 # Define the possible audit outcomes
@@ -8,15 +8,14 @@ AUDIT_STATUSES = ['Excellent', 'Good', 'Fair', 'Poor', 'N/A']
 class AuditService:
     """
     Handles the core logic for running a website audit, simulating metric checks,
-    and calculating category scores based on defined weights.
+    and calculating category and overall scores based on the full list of categories.
     """
 
     @staticmethod
-    def _simulate_metric_check(metric_name: str, url: str) -> str:
+    def _simulate_metric_check(metric_name: str) -> str:
         """
-        A placeholder for actual audit logic. 
-        For now, it returns a random status.
-        In a real application, this would call external tools (e.g., Lighthouse, security scanners).
+        A placeholder for actual audit logic (e.g., calling external tools). 
+        Returns a random status for demonstration.
         """
         # A simple check to ensure 'N/A' is less common for simulation
         weights = [4, 4, 3, 2, 1] 
@@ -26,55 +25,56 @@ class AuditService:
     @staticmethod
     def run_audit(url: str):
         """
-        Executes a simulated audit against the given URL.
+        Executes a simulated audit against the given URL and structures the results.
         """
-        metrics_result = {}
+        metrics_status_map = {}
         categories_result = {}
 
-        # 1. Populate metrics_result and categories_result by running checks
+        # 1. Run checks for all categories and metrics
         for category, info in AUDIT_CATEGORIES.items():
             
             # Initialize category structure for the final result
             categories_result[category] = {
-                "desc": info["desc"], 
+                "description": info["desc"], 
                 "items": []
             }
             
             for metric in info["metrics"]:
-                status = AuditService._simulate_metric_check(metric, url)
+                # Simulate the check for the metric
+                status = AuditService._simulate_metric_check(metric)
                 
-                # Store metric status globally
-                metrics_result[metric] = status
+                # Store metric status globally (flat map)
+                metrics_status_map[metric] = status
                 
-                # Store metric result within its category for display
+                # Store structured metric result within its category
                 categories_result[category]["items"].append({
                     "name": metric,
                     "status": status,
-                    "suggestion": f"Placeholder suggestion for {metric}." # Real suggestion logic goes here
+                    # Placeholder for real-world suggestion logic
+                    "suggestion": f"Check documentation for best practice on '{metric}'." 
                 })
 
-        # 2. Calculate scores
-        scores = AuditService.calculate_score(metrics_result)
+        # 2. Calculate scores using the complete map of results
+        scores = AuditService.calculate_score(metrics_status_map)
 
         # 3. Return the comprehensive result
         return {
             "url": url,
-            "metrics_map": metrics_result,     # Flat map of all metric statuses
-            "categories": categories_result,   # Structured result organized by category
-            "scores": scores                   # Calculated category and overall scores
+            "metrics_map": metrics_status_map,  # Flat map of all metric statuses
+            "categories": categories_result,    # Structured result organized by category
+            "scores": scores                    # Calculated category and overall scores
         }
 
     @staticmethod
-    def calculate_score(metrics: dict) -> dict:
+    def calculate_score(metrics_status_map: dict) -> dict:
         """
-        Calculates category scores based on metric statuses.
-        Excellent = 1 point, Good = 0.5 point, Fair/Poor/N/A = 0 points.
+        Calculates category scores based on metric statuses across all defined categories.
         """
         
         def score_category(category_metrics_statuses: list) -> float:
             """Calculates the score for a single category."""
             
-            # Filter out N/A metrics before scoring
+            # Filter out 'N/A' metrics, as they should not count against the total
             valid_metrics = [v for v in category_metrics_statuses if v != 'N/A']
             total_count = len(valid_metrics)
             
@@ -89,28 +89,31 @@ class AuditService:
             return round(raw_score * 100, 2)
 
         all_scores = {}
-        overall_scores = []
+        category_scores_list = []
         
+        # Iterate over ALL categories in AUDIT_CATEGORIES
         for category, info in AUDIT_CATEGORIES.items():
             
-            # 1. Get the list of statuses for the metrics in this category
+            # 1. Get the list of statuses for the metrics in this specific category
             category_metrics_statuses = [
-                metrics.get(metric, 'N/A') # Use N/A if metric somehow missed in the run_audit map
+                metrics_status_map.get(metric, 'N/A')
                 for metric in info["metrics"]
             ]
             
             # 2. Calculate the score
             score = score_category(category_metrics_statuses)
             
-            # 3. Store the result
+            # 3. Store the result with a standardized key (e.g., performance_score)
             score_key = f"{category.lower().replace(' ', '_')}_score"
             all_scores[score_key] = score
-            overall_scores.append(score)
+            category_scores_list.append(score)
 
-        # Calculate Overall Score (Average of all category scores)
-        if overall_scores:
-            all_scores["overall_score"] = round(sum(overall_scores) / len(overall_scores), 2)
+        # Calculate Overall Score (Average of all valid category scores)
+        if category_scores_list:
+            all_scores["overall_score"] = round(sum(category_scores_list) / len(category_scores_list), 2)
         else:
             all_scores["overall_score"] = 0.00
 
+        # The 'organize_metrics' method is now redundant and its logic is integrated 
+        # into 'run_audit', so it has been removed.
         return all_scores
