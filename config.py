@@ -1,28 +1,26 @@
 import os
 
 class Config:
-    # ... other config ...
-    
+    SECRET_KEY = os.environ.get("SECRET_KEY", "supersecretkey")
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///audit.db")
 
-    # Fix for Railway's DATABASE_URL prefix AND force SSL
+    # CRITICAL FIX for Railway PostgreSQL Connection
     if SQLALCHEMY_DATABASE_URI:
+        # 1. Replace old 'postgres://' with 'postgresql://' (required by modern SQLAlchemy)
         if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
-            # 1. FIX: Replace old 'postgres://' with 'postgresql://'
             SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
         
-        # 2. FIX: Ensure sslmode=require is present for Railway proxy connections
-        # The specific hostname might be different, but this general logic is key.
-        # This check is safer than relying on a specific hostname:
+        # 2. Add required SSL mode for Railway proxy connections
         if "sslmode=" not in SQLALCHEMY_DATABASE_URI:
+             # Append '?sslmode=require' if no existing query params, else append '&sslmode=require'
              SQLALCHEMY_DATABASE_URI += "?sslmode=require" if "?" not in SQLALCHEMY_DATABASE_URI else "&sslmode=require"
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # 3. FIX: SQLAlchemy engine options to prevent connection timeouts
+    # ADDED: SQLAlchemy engine options to prevent connection timeouts
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 600
     }
     
-    # ... rest of config ...
+    # ... rest of your config file ...
