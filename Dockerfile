@@ -4,7 +4,7 @@
 FROM python:3.10-slim
 
 # ---------------------------
-# System dependencies
+# System dependencies for WeasyPrint
 # ---------------------------
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -12,10 +12,10 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libcairo2 \
     libcairo2-dev \
-    libpango1.0-0 \
+    libpango-1.0-0 \
     libpango1.0-dev \
-    libgdk-pixbuf2.0-0 \
-    libgdk-pixbuf2.0-dev \
+    libgdk-pixbuf-xlib-2.0-0 \
+    libgdk-pixbuf-xlib-2.0-dev \
     libffi-dev \
     libjpeg-dev \
     git \
@@ -28,14 +28,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # ---------------------------
-# Copy requirements and install
+# Copy and install Python dependencies
 # ---------------------------
 COPY requirements.txt .
-
-# Upgrade pip first
 RUN pip install --upgrade pip
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ---------------------------
@@ -57,9 +53,7 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8080
 
 # ---------------------------
-# Start Gunicorn (web app) + RQ worker
-# ---------------------------
-# Use a shell script to run multiple processes in Railway
+# Start web and worker
 # ---------------------------
 CMD ["sh", "-c", "\
     echo 'Starting RQ worker...' & \
