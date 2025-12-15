@@ -1,20 +1,13 @@
-# railway.toml — multi-service setup
+# railway.toml — multi-service setup with shared environment variables
 
 [project]
 name = "webaudit-app"
 environments = ["production"]
 
 # ---------------------------
-# Web service — Flask app with Gunicorn
+# Global environment variables (shared by all services)
 # ---------------------------
-[[services]]
-name = "web"
-env = "production"
-port = 8080
-dockerfile = "Dockerfile"
-start = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 300"
-
-[[services.env]]
+[env]
 REDIS_URL = "redis://:@your-redis-host:6379/0"
 SECRET_KEY = "supersecretkey"
 DATABASE_URL = "postgresql://username:password@host:5432/dbname"
@@ -23,41 +16,32 @@ MAIL_PORT = "587"
 MAIL_USERNAME = "your_email@example.com"
 MAIL_PASSWORD = "your_email_password"
 RQ_QUEUE = "default"
+PORT = "8080"
+
+# ---------------------------
+# Web service — Flask app with Gunicorn
+# ---------------------------
+[[services]]
+name = "web"
+dockerfile = "Dockerfile"
+start = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 300"
+port = 8080
+env = "production"
 
 # ---------------------------
 # Worker service — RQ worker
 # ---------------------------
 [[services]]
 name = "worker"
-env = "production"
 dockerfile = "Dockerfile"
 start = "rq worker $RQ_QUEUE"
-
-[[services.env]]
-REDIS_URL = "redis://:@your-redis-host:6379/0"
-SECRET_KEY = "supersecretkey"
-DATABASE_URL = "postgresql://username:password@host:5432/dbname"
-MAIL_SERVER = "smtp.example.com"
-MAIL_PORT = "587"
-MAIL_USERNAME = "your_email@example.com"
-MAIL_PASSWORD = "your_email_password"
-RQ_QUEUE = "default"
+env = "production"
 
 # ---------------------------
 # Scheduler service — runs daily tasks
 # ---------------------------
 [[services]]
 name = "scheduler"
-env = "production"
 dockerfile = "Dockerfile"
 start = "python scheduler.py"
-
-[[services.env]]
-REDIS_URL = "redis://:@your-redis-host:6379/0"
-SECRET_KEY = "supersecretkey"
-DATABASE_URL = "postgresql://username:password@host:5432/dbname"
-MAIL_SERVER = "smtp.example.com"
-MAIL_PORT = "587"
-MAIL_USERNAME = "your_email@example.com"
-MAIL_PASSWORD = "your_email_password"
-RQ_QUEUE = "default"
+env = "production"
