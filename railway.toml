@@ -28,3 +28,13 @@ project = "The-Web-for-Audit"
     { key = "PYTHONUNBUFFERED", value = "1" },
     { key = "RQ_QUEUE", value = "default" }
   ]
+
+# ---------------------------
+# Scheduler service (RQ)
+# ---------------------------
+[services.scheduler]
+  build = "."
+  run = "sh -c 'python scheduler.py'"
+  env = [
+    { key = "PYTHONUNBUFFERED", value = "1" }
+  ]
