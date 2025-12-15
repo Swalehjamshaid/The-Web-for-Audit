@@ -1,4 +1,3 @@
-# scheduler.py — Always-on process (Railway worker service)
 import time
 from datetime import datetime
 
