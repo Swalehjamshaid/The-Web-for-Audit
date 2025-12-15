@@ -104,7 +104,6 @@ def run_audit():
     )
     db.session.add(report)
     db.session.commit()
-    # FIXED SYNTAX ERROR HERE
     flash(f'Audit for {url} completed', 'success')
     return redirect(url_for('dashboard'))
 
