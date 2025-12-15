@@ -1,23 +1,15 @@
-# app.py — Main Flask App
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
-from flask_mail import Mail, Message
+from flask_mail import Mail
 from datetime import datetime
-import os
 import json
+from config import Config
 from audit_service import AuditService
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'supersecretkey')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config.from_object(Config)
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -51,7 +43,7 @@ class AuditReport(db.Model):
     website_url = db.Column(db.String(255), nullable=False)
     date_audited = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    metrics_json = db.Column(db.Text)  # JSON of metrics
+    metrics_json = db.Column(db.Text)
     performance_score = db.Column(db.Float)
     security_score = db.Column(db.Float)
     accessibility_score = db.Column(db.Float)
@@ -64,9 +56,7 @@ def load_user(user_id):
 # ---------------- Routes ----------------
 @app.route('/')
 def home():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    return render_template('index.html')
+    return redirect(url_for('dashboard')) if current_user.is_authenticated else render_template('index.html')
 
 @app.route('/dashboard')
 @login_required
