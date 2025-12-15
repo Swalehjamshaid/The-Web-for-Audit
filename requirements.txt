@@ -1,10 +1,5 @@
-Flask==2.3.4
-Flask-Login==0.6.3
-Flask-SQLAlchemy==3.0.5
-Flask-Bcrypt==1.0.1
-gunicorn==23.0.0
-pdfkit==1.0.0
-APScheduler==3.10.2
-requests==2.32.0
-plotly==5.18.1
-psycopg2-binary==2.9.7
+Flask==2.3.3
+gunicorn==21.2.0
+rq==1.15.2
+pillow==10.0.0
+cairocffi==1.4.1
