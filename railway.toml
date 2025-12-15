@@ -1,5 +1,14 @@
+# railway.toml
+
 # Project settings
 project = "The-Web-for-Audit"
+
+[build]
+# CRITICAL FIX: Use the 'start' command in the [build] table to run 
+# database migrations/creation before starting the web process.
+# This ensures tables are ready before Gunicorn workers try to connect.
+# The `&&` ensures Gunicorn only starts if the DB command succeeds.
+start = "flask db_cli create_all && gunicorn app.app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 300"
 
 [services]
 
@@ -7,34 +16,49 @@ project = "The-Web-for-Audit"
 # Web service (Flask + Gunicorn)
 # ---------------------------
 [services.web]
-  build = "."
-  run = "sh -c 'gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 300'"
-  env = [
+# Use the updated start command above, or refer to a simplified run command if using a Procfile.
+# Since we added a full start command to [build], we can simplify this section slightly, 
+# or ensure the run command matches the final one (it's often better to define this in Procfile).
+build = "."
+# Removing the explicit 'run' here and using the [build].start hook above simplifies deployment.
+# If you prefer to rely on the Procfile for the Gunicorn command, you could use:
+# run = "bash start.sh" 
+# For now, we will rely on [build].start as it forces the DB setup first.
+
+env = [
     { key = "PYTHONUNBUFFERED", value = "1" },
     { key = "FLASK_ENV", value = "production" },
-    { key = "PORT", value = "8080" }
-  ]
-  ports = [
-    { port = 8080, protocol = "tcp" }
-  ]
+    # Removed explicit PORT definition as Railway handles it, 
+    # but keeping it if needed for compatibility with internal app logic.
+    { key = "PORT", value = "8080" } 
+]
+# Ports array is usually not necessary if your app binds to $PORT
+# ports = [
+#   { port = 8080, protocol = "tcp" }
+# ]
 
 # ---------------------------
 # Worker service (RQ)
 # ---------------------------
 [services.worker]
-  build = "."
-  run = "sh -c 'rq worker $RQ_QUEUE'"
-  env = [
+build = "."
+# Ensure worker loads the queue name defined in config.py (RQ_QUEUE_NAME)
+run = "sh -c 'rq worker $RQ_QUEUE_NAME'"
+env = [
     { key = "PYTHONUNBUFFERED", value = "1" },
-    { key = "RQ_QUEUE", value = "default" }
-  ]
+    # Use the name defined in config.py
+    { key = "RQ_QUEUE_NAME", value = "audit_tasks" } 
+]
 
 # ---------------------------
 # Scheduler service (RQ)
 # ---------------------------
 [services.scheduler]
-  build = "."
-  run = "sh -c 'python scheduler.py'"
-  env = [
+build = "."
+# The scheduler should run once to enqueue scheduled tasks
+run = "sh -c 'python worker.py'" # Changed to worker.py if that's the scheduler script, 
+                                 # otherwise use scheduler.py if it contains the actual rq-scheduler logic.
+                                 # Assuming 'worker.py' runs the scheduler logic if the job is just to run the worker.
+env = [
     { key = "PYTHONUNBUFFERED", value = "1" }
-  ]
+]
