@@ -1,10 +1,10 @@
-# /app/app/models.py
+# /app/app/models.py (Reverted to standard relative import)
 
 from datetime import datetime
 import json
-# CRITICAL FIX: Use the absolute package path to import 'db'. 
-# This prevents the circular import problem when Gunicorn loads the application.
-from app.app.app import db  
+# FIX: Change back to relative import, as the models are now loaded 
+# inside the app context, preventing the circular issue.
+from .app import db  
 
 # --- Example Models ---
 
@@ -13,8 +13,6 @@ class AuditReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     website_url = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Store the JSON result blob from AuditService
     metrics_json = db.Column(db.Text, nullable=False) 
 
 class User(db.Model):
