@@ -1,2 +1,5 @@
+[deploy]
+release_command = "flask db upgrade"
+
 [start]
 cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
