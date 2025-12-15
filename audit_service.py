@@ -1,4 +1,3 @@
-# audit_service.py — Full Audit Logic
 import random
 from audit_categories import AUDIT_CATEGORIES
 
