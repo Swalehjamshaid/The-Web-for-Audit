@@ -17,6 +17,11 @@ mail = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
+# >>> ADDED DEBUGGING CODE <<<
+print("SQLAlchemy Engine Options Loaded:")
+print(app.config.get('SQLALCHEMY_ENGINE_OPTIONS'))
+# <<< END ADDED DEBUGGING CODE <<<
+
 # ---------------- Models ----------------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
