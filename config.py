@@ -20,7 +20,3 @@ class Config:
 
     REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     RQ_QUEUE = os.environ.get("RQ_QUEUE", "default")
-Use code with caution.
-
-After pushing this corrected file to GitHub, your application should boot up without the syntax error and implement the connection fix.
-Once you have confirmed your ap
