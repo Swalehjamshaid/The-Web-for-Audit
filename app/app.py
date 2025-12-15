@@ -7,8 +7,8 @@ from datetime import datetime
 import json
 from config import Config
 from audit_service import AuditService
-import sqlalchemy # Import SQLAlchemy to reference OperationalError
-from tenacity import retry, stop_after_attempt, wait_exponential # Import tenacity
+import sqlalchemy 
+from tenacity import retry, stop_after_attempt, wait_exponential 
 
 app = Flask(__name__)
 app.config.from_object(Config)
