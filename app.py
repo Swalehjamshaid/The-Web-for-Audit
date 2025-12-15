@@ -1,161 +1,175 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime
 import pdfkit
-import requests
-import io
-import matplotlib.pyplot as plt
-import base64
-from threading import Thread
-import time
+from apscheduler.schedulers.background import BackgroundScheduler
+import plotly
+import plotly.graph_objs as go
+import json
+import os
+from config import Config
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key'  # Change this!
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///audit.db'  # Use PostgreSQL in prod
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(Config)
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = "login"
 
-# Models
+scheduler = BackgroundScheduler()
+scheduler.start()
 
+# ===================== Models =====================
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    email = db.Column(db.String(150), unique=True)
+    password = db.Column(db.String(150))
+    name = db.Column(db.String(150))
+    company = db.Column(db.String(150))
+    role = db.Column(db.String(50), default="client")  # admin, auditor, client
+    is_active = db.Column(db.Boolean, default=True)
+    reports = db.relationship("AuditReport", backref="user", lazy=True)
 
-    def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password)
+    @property
+    def is_admin(self):
+        return self.role == "admin"
 
-class AuditResult(db.Model):
+class AuditReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    url = db.Column(db.String(2083), nullable=False)
-    status_code = db.Column(db.Integer)
-    checked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    website_url = db.Column(db.String(255))
+    date_audited = db.Column(db.DateTime, default=datetime.utcnow)
+    performance_score = db.Column(db.Float, default=0)
+    security_score = db.Column(db.Float, default=0)
+    accessibility_score = db.Column(db.Float, default=0)
+    metrics_data = db.Column(db.JSON)  # 45+ metrics stored as JSON
 
-# Load user callback
-
+# ===================== User Loader =====================
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Routes
+# ===================== Routes =====================
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-@app.route('/')
-def index():
-    return "Welcome to the Web Audit App! Please login."
-
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
+    if request.method == "POST":
+        user = User.query.filter_by(email=request.form["email"]).first()
+        if user and bcrypt.check_password_hash(user.password, request.form["password"]):
             login_user(user)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid credentials')
-    return render_template('login.html')
+            return redirect(url_for("dashboard"))
+        flash("Invalid email or password", "danger")
+    return render_template("login.html")
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    # Simple metric: count audits & average status code
-    audits = AuditResult.query.all()
-    count = len(audits)
-    avg_status = sum([a.status_code for a in audits if a.status_code]) / (count or 1)
-
-    # Create a simple graph - status code distribution
-    status_codes = {}
-    for audit in audits:
-        status_codes[audit.status_code] = status_codes.get(audit.status_code, 0) + 1
-    # Plot
-    plt.bar(status_codes.keys(), status_codes.values())
-    plt.xlabel('Status Code')
-    plt.ylabel('Count')
-    plt.title('Status Code Distribution')
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    plt.close()
-
-    return render_template('dashboard.html', count=count, avg_status=avg_status, graph=img_base64)
-
-@app.route('/logout')
+@app.route("/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for("home"))
 
-@app.route('/audit', methods=['GET', 'POST'])
+@app.route("/dashboard")
 @login_required
-def audit():
-    if request.method == 'POST':
-        url = request.form['url']
-        try:
-            response = requests.get(url)
-            status_code = response.status_code
-            # Save result
-            audit_result = AuditResult(url=url, status_code=status_code)
-            db.session.add(audit_result)
-            db.session.commit()
-            flash(f'Audit done for {url}, status code: {status_code}')
-        except Exception as e:
-            flash(f'Error auditing {url}: {str(e)}')
-        return redirect(url_for('dashboard'))
-    return render_template('audit.html')
+def dashboard():
+    reports = AuditReport.query.filter_by(user_id=current_user.id).order_by(AuditReport.date_audited.desc()).all()
+    return render_template("dashboard.html", reports=reports)
 
-@app.route('/report/<int:audit_id>')
+@app.route("/admin_dashboard", methods=["GET", "POST"])
 @login_required
-def report(audit_id):
-    audit = AuditResult.query.get_or_404(audit_id)
-    rendered = render_template('report.html', audit=audit)
+def admin_dashboard():
+    if not current_user.is_admin:
+        flash("Access denied", "danger")
+        return redirect(url_for("dashboard"))
+    users = User.query.all()
+    total_audits = AuditReport.query.count()
+    return render_template("admin_dashboard.html", users=users, total_audits=total_audits)
+
+@app.route("/run_audit", methods=["POST"])
+@login_required
+def run_audit():
+    url = request.form["website_url"]
+    # Simulated audit logic with random metrics
+    import random
+    metrics = {f"Metric_{i}": random.choice(["Excellent","Good","Fair","Poor"]) for i in range(1,46)}
+    report = AuditReport(
+        user_id=current_user.id,
+        website_url=url,
+        performance_score=random.randint(60, 100),
+        security_score=random.randint(60, 100),
+        accessibility_score=random.randint(60, 100),
+        metrics_data=metrics
+    )
+    db.session.add(report)
+    db.session.commit()
+    flash(f"Audit completed for {url}", "success")
+    return redirect(url_for("dashboard"))
+
+@app.route("/view_report/<int:report_id>")
+@login_required
+def view_report(report_id):
+    report = AuditReport.query.get_or_404(report_id)
+    scores = {
+        "performance": report.performance_score,
+        "security": report.security_score,
+        "accessibility": report.accessibility_score
+    }
+    data = report.metrics_data
+    return render_template("report_detail.html", report=report, scores=scores, data={"categories":{"All Metrics":{"desc":"Full audit metrics","items":list(data.keys())}}, "metrics":data})
+
+@app.route("/report_pdf/<int:report_id>")
+@login_required
+def report_pdf(report_id):
+    report = AuditReport.query.get_or_404(report_id)
+    scores = {
+        "performance": report.performance_score,
+        "security": report.security_score,
+        "accessibility": report.accessibility_score
+    }
+    data = report.metrics_data
+    rendered = render_template("report_pdf.html", report=report, scores=scores, data={"categories":{"All Metrics":{"desc":"Full audit metrics","items":list(data.keys())}}, "metrics":data})
     pdf = pdfkit.from_string(rendered, False)
-    return send_file(io.BytesIO(pdf), attachment_filename='report.pdf', as_attachment=True)
+    return pdf, 200, {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": f"inline; filename={report.website_url}.pdf"
+    }
 
-# Run scheduled audit example (very simple)
+# ===================== Scheduled Audit Example =====================
+def scheduled_audit(user_id, url):
+    user = User.query.get(user_id)
+    if not user:
+        return
+    import random
+    metrics = {f"Metric_{i}": random.choice(["Excellent","Good","Fair","Poor"]) for i in range(1,46)}
+    report = AuditReport(
+        user_id=user.id,
+        website_url=url,
+        performance_score=random.randint(60, 100),
+        security_score=random.randint(60, 100),
+        accessibility_score=random.randint(60, 100),
+        metrics_data=metrics
+    )
+    db.session.add(report)
+    db.session.commit()
 
-def scheduled_audit(url, interval_sec=60):
-    while True:
-        try:
-            response = requests.get(url)
-            audit_result = AuditResult(url=url, status_code=response.status_code)
-            db.session.add(audit_result)
-            db.session.commit()
-            print(f"Scheduled audit done for {url}")
-        except Exception as e:
-            print(f"Error in scheduled audit: {e}")
-        time.sleep(interval_sec)
+# Example: schedule audit daily at 12 PM (for testing)
+# scheduler.add_job(scheduled_audit, 'cron', hour=12, args=[1,'https://example.com'])
 
-@app.route('/schedule', methods=['GET', 'POST'])
-@login_required
-def schedule():
-    if request.method == 'POST':
-        url = request.form['url']
-        interval = int(request.form['interval'])
-        # Start a thread for simplicity (not for prod!)
-        thread = Thread(target=scheduled_audit, args=(url, interval))
-        thread.daemon = True
-        thread.start()
-        flash(f'Scheduled audit started for {url} every {interval} seconds')
-        return redirect(url_for('dashboard'))
-    return render_template('schedule.html')
+# ===================== Create Admin User if not exists =====================
+@app.before_first_request
+def create_tables():
+    db.create_all()
+    admin_email = "roy.jamshaid@gmail.com"
+    admin = User.query.filter_by(email=admin_email).first()
+    if not admin:
+        hashed_pw = bcrypt.generate_password_hash("Jamshaid,1981").decode("utf-8")
+        admin = User(email=admin_email, password=hashed_pw, name="Roy Jamshaid", role="admin")
+        db.session.add(admin)
+        db.session.commit()
 
-if __name__ == '__main__':
-    with app.app_context():
-        # Create admin user if not exist
-        admin_email = "roy.jamshaid@gmail.com"
-        admin_password = "Jamshaid,1981"
-        if not User.query.filter_by(email=admin_email).first():
-            hashed_pw = bcrypt.generate_password_hash(admin_password).decode('utf-8')
-            admin = User(email=admin_email, password_hash=hashed_pw)
-            db.session.add(admin)
-            db.session.commit()
-            print("Admin user created.")
-    app.run(host='0.0.0.0', port=8080)
+if __name__ == "__main__":
+    app.run(debug=True)
