@@ -46,7 +46,6 @@ class AuditReport(db.Model):
     date_audited = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     metrics_json = db.Column(db.Text)
-    # FIX: Correct db.Float syntax confirmed working
     performance_score = db.Column(db.Float)
     security_score = db.Column(db.Float)
     accessibility_score = db.Column(db.Float)
@@ -105,7 +104,8 @@ def run_audit():
     )
     db.session.add(report)
     db.session.commit()
-    flash(f'Audit for {url} completed",'success')
+    # FIXED SYNTAX ERROR HERE
+    flash(f'Audit for {url} completed', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/report/<int:report_id>')
