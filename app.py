@@ -48,9 +48,9 @@ class AuditReport(db.Model):
     date_audited = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     metrics_json = db.Column(db.Text)
-    performance_score = db.Column(db.Float)
-    security_score = db.Column(db.Float)
-    accessibility_score = db.Column(db.Float)
+    performance_score = db.Column(self.Float)
+    security_score = db.Column(self.Float)
+    accessibility_score = db.Column(self.Float)
 
 # ---------------- Login ----------------
 @login_manager.user_loader
