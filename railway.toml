@@ -1,5 +1,7 @@
-[deploy]
-release_command = "flask db upgrade"
+[build]
+  # Build Dockerfile
+  dockerfile = "Dockerfile"
 
 [start]
-cmd = "gunicorn app:app --bind 0.0.0.0:$PORT"
+  # Launch Gunicorn with environment port
+  cmd = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2"
