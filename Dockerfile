@@ -4,7 +4,7 @@
 FROM python:3.10-slim
 
 # ---------------------------
-# System dependencies for WeasyPrint
+# System dependencies
 # ---------------------------
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y \
     libcairo2-dev \
     libpango-1.0-0 \
     libpango1.0-dev \
-    libgdk-pixbuf-xlib-2.0-0 \
-    libgdk-pixbuf-xlib-2.0-dev \
+    libgdk-pixbuf-x11-2.0-0 \
+    libgdk-pixbuf-x11-2.0-dev \
     libffi-dev \
     libjpeg-dev \
     git \
@@ -28,10 +28,14 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # ---------------------------
-# Copy and install Python dependencies
+# Copy requirements and install
 # ---------------------------
 COPY requirements.txt .
+
+# Upgrade pip first
 RUN pip install --upgrade pip
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ---------------------------
@@ -53,7 +57,7 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8080
 
 # ---------------------------
-# Start web and worker
+# Start Gunicorn (web app) + RQ worker
 # ---------------------------
 CMD ["sh", "-c", "\
     echo 'Starting RQ worker...' & \
