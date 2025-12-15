@@ -12,12 +12,4 @@ rq==1.16.2
 python-dotenv==1.0.1
 gunicorn==23.0.0
 requests==2.32.0
-lxml==4.9.3
-beautifulsoup4==4.12.2
 validators==0.20.0
-html5lib==1.1
-tldextract==4.4.0
-whois==0.9.19
-ipwhois==2.2.0
-dnspython==2.3.0
-pyyaml==6.0
