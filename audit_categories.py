@@ -1,4 +1,3 @@
-# audit_categories.py — Full metrics definition
 AUDIT_CATEGORIES = {
     "Performance": {
         "desc": "Measures speed, responsiveness, and optimization of the website.",
