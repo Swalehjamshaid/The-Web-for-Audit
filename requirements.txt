@@ -4,10 +4,13 @@ Flask-Bcrypt==1.0.1
 Flask-Login==0.6.3
 Flask-Mail==0.10.0
 Werkzeug==3.0.4
-psycopg2-binary==2.9.9  # ADDED the expected driver
+psycopg2-binary==2.9.9
 WeasyPrint==62.3
 cairocffi==1.7.1
 redis==5.0.8
 rq==1.16.2
 python-dotenv==1.0.1
 gunicorn==23.0.0
+requests==2.32.0
+lxml==4.9.3
+beautifulsoup4==4.12.2
