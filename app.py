@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -16,11 +15,7 @@ app.config.from_object(Config)
 
 db = SQLAlchemy(app)
 
-# >>> ADDED: Code to create all database tables on startup (works for Gunicorn and local) <<<
-# This ensures that the 'user' table is created if it does not exist, resolving the "no such table" error.
-with app.app_context():
-    db.create_all()
-# <<< END ADDED SECTION <<<
+# REMOVED: db.create_all() from module level. Use one-off command or Flask-Migrate in production.
 
 bcrypt = Bcrypt(app)
 mail = Mail(app)
@@ -155,8 +150,8 @@ def admin_create_user():
     return redirect(url_for('admin_dashboard'))
 
 if __name__=='__main__':
-    # This block is only for local development/running python app.py
-    # Gunicorn is used for the production environment.
+    # This block runs only when running 'python app.py' locally.
     with app.app_context():
-        db.create_all()
+        db.create_all() # Creates tables for local SQLite use
     app.run(host='0.0.0.0', port=5000)
+
