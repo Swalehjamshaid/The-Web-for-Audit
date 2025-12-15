@@ -5,12 +5,11 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///audit.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # >>> ADDED: SQLAlchemy engine options to prevent connection timeouts <<<
+    # ADDED: SQLAlchemy engine options to prevent connection timeouts
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 600
     }
-    # <<< END ADDED SECTION >>>
 
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
@@ -23,4 +22,5 @@ class Config:
     RQ_QUEUE = os.environ.get("RQ_QUEUE", "default")
 Use code with caution.
 
-After you update this file in your project and restart your application container on Railway (or wherever it's deployed), SQLAlchemy will automatic
+After pushing this corrected file to GitHub, your application should boot up without the syntax error and implement the connection fix.
+Once you have confirmed your ap
