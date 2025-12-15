@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -15,7 +16,8 @@ app.config.from_object(Config)
 
 db = SQLAlchemy(app)
 
-# >>> ADDED: Code to create all database tables on startup <<<
+# >>> ADDED: Code to create all database tables on startup (works for Gunicorn and local) <<<
+# This ensures that the 'user' table is created if it does not exist, resolving the "no such table" error.
 with app.app_context():
     db.create_all()
 # <<< END ADDED SECTION <<<
